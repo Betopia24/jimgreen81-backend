@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== OTP ====================
+enum OtpType {
+  ACCOUNT_VERIFY
+  FORGOT_PASSWORD
+}
+
+
+model Otp {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  email      String    @unique
+  code       Int
+  type       OtpType   
+  isUsed     Boolean   @default(false)
+  isVerified Boolean   @default(false)
+  verifiedAt DateTime?
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  updateAt   DateTime  @updatedAt
+
+  @@map("otps")
+}
+
+
+// ============================= User model =========================
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+}
+
+enum UserRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserTier {
+  FREE
+  PREMIUM
+}
+
+enum UserStatus {
+  UNBLOCK
+  BLOCKED
+}
+
+model User {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  firstName       String
+  lastName        String
+  email           String       @unique
+  password        String
+  avatar          String?
+  role            UserRole     @default(ADMIN)
+  status          UserStatus   @default(UNBLOCK)
+  tier            UserTier     @default(FREE)
+  provider        AuthProvider @default(EMAIL)
+  isEmailVerified Boolean      @default(false)
+
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@map("users")
+}
+
+
+model Category {
+    id          String       @id @default(auto()) @map("_id") @db.ObjectId
+    name        String
+    orderIndex  Int
+    createdAt   DateTime     @default(now())
+    updatedAt   DateTime     @updatedAt
+
+    @@map("categories")
+}
+
+model RecentActivity {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  actionType    String
+  message       String?
+  details       Json?
+  createdAt DateTime @default(now())
+
+  @@map("recent_activities")
+}

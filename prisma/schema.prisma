@@ -65,22 +65,173 @@ model User {
   provider        AuthProvider @default(EMAIL)
   isEmailVerified Boolean      @default(false)
 
+  companyMember   CompanyMember?
 
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@map("users")
 }
 
+// ========================= Company =========================
+model Company {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  email           String
+  location        String
+  companyMembers  CompanyMember[]
+  rawMaterials    RawMaterial[]
+  products        Product[]
+  customers        Customer[]
+
+
+  @@map("companies")
+}
+
+enum MemberRole {
+  admin
+  user
+}
+
+model CompanyMember {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String       @unique @db.ObjectId
+  companyId       String       @db.ObjectId
+  role            MemberRole
+
+  user            User         @relation(fields: [userId], references: [id])
+  company         Company      @relation(fields: [userId], references: [id])
+
+  @@map("company_members")
+}
+
+// ======================== Raw Material ======================
+model RawMaterial {
+  id                    String       @id @default(auto()) @map("_id") @db.ObjectId
+  chemicalName          String
+  chemicalType          String // Corrosion Inhibitor, Biocide,Scale Inhibitor,  Dispersant, Other 
+  supplierName          String
+  dosageRate            String // ppm, mg/L
+  feedFrequency         String // Daily, weekly
+  safetyClassification  String // Hazardous, Non-hazardous
+  instructions          String
+  isActive              Boolean      @default(true)
+  companyId       String       @db.ObjectId
+
+  company         Company      @relation(fields: [companyId], references: [id])
+ 
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@map("raw_materials")
+}
+
+// =========================== Product ========================
+model Product {
+  id                        String      @id @default(auto()) @map("_id") @db.ObjectId
+  name                      String
+  manufacturer              String
+  productCategory           String // Corrosion Inhibitor, Biocide,Scale Inhibitor,  Dispersant, Other
+  intendedUse               String // Cooling, Boiler, Process Water
+  operatingPhRangeMin       Int
+  operatingPhRangeMax       Int
+  temperatureTolerance      String 
+  maximumHardnessAllowed    String // e.g Treatment Chemical, Testing Reagent, Cleaning Agent, Additive
+  compatibilityNote         String
+  costPerUnit               Int 
+  averageMonthlyConsumption String // ppm, L, kg, gal
+  replacementFrequency      String // e.g monthly, quarterly, semi-annually, annually
+  isActive              Boolean      @default(true)
+  companyId       String       @db.ObjectId
+
+  company         Company      @relation(fields: [companyId], references: [id])
+
+  createdAt                 DateTime     @default(now())
+  updatedAt                 DateTime     @updatedAt
+
+  @@map("products")
+}
+
+// =========================== Customer ========================
+model Customer { 
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  siteName        String
+  location        String
+  address         String
+  contactPerson   String
+  contactEmail    String
+  contactPhone    String
+  isActive        Boolean      @default(true)
+  companyId       String       @db.ObjectId
+
+  company         Company      @relation(fields: [companyId], references: [id])
+
+  assets          Asset[]
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("customers")
+}
+
+
+model Asset {
+  id                    String       @id @default(auto()) @map("_id") @db.ObjectId
+  name                  String
+  type                  String       // e.g Cooling Tower, Evaporative Condenser, Once-Through Cooling, Seawater Cooling Tower, Adiabatic Cooler
+  location              String
+  installationDate      String
+  systemVolume          String
+  flowRate              String
+  operatingTemperature  String
+  cyclesOfConcentration String
+  materialType          String // e.g Carbon Steel, Stainless Steel, Copper, Galvanized Steel
+  currentCondition      String // e.g 
+  knownIssues           String
+  customerId            String       @db.ObjectId
+
+  customer              Customer      @relation(fields: [customerId], references: [id])
+
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@map("assets")
+}
+
+
+// =========================== Subscription ==========================
+
+enum PlanStatus {
+  BASIC
+  ADVANCED
+  EXPERT
+}
+
+model Plan {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  monthlyPrice    Int
+  annualPrice     Int
+  description     String
+  features        String[]
+  isActive        Boolean      @default(true)          
+  maxReport       Int
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("plans")
+}
 
 model Category {
-    id          String       @id @default(auto()) @map("_id") @db.ObjectId
-    name        String
-    orderIndex  Int
-    createdAt   DateTime     @default(now())
-    updatedAt   DateTime     @updatedAt
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  orderIndex  Int
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
-    @@map("categories")
+  @@map("categories")
 }
 
 model RecentActivity {
@@ -92,3 +243,23 @@ model RecentActivity {
 
   @@map("recent_activities")
 }
+
+
+// model find when upload analysis image {
+//   id                String       @id @default(auto()) @map("_id") @db.ObjectId
+//   ph                String
+//   calcium           String
+//   magnesium         String
+//   sodium            String
+//   chloride          String
+//   sulfate           String
+//   iron              String
+//   temperature       String
+//   totalAlkalinity   String
+//   tds               String
+
+//   createdAt         DateTime     @default(now())
+//   updatedAt         DateTime     @updatedAt
+
+//   @@map("raw_materials")
+// }

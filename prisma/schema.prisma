@@ -38,7 +38,7 @@ enum AuthProvider {
 }
 
 enum UserRole {
-  ADMIN
+  USER
   SUPER_ADMIN
 }
 
@@ -59,7 +59,7 @@ model User {
   email           String       @unique
   password        String
   avatar          String?
-  role            UserRole     @default(ADMIN)
+  role            UserRole     @default(USER)
   status          UserStatus   @default(UNBLOCK)
   tier            UserTier     @default(FREE)
   provider        AuthProvider @default(EMAIL)
@@ -77,13 +77,12 @@ model User {
 model Company {
   id              String       @id @default(auto()) @map("_id") @db.ObjectId
   name            String
-  email           String
+  email           String       @unique
   location        String
   companyMembers  CompanyMember[]
   rawMaterials    RawMaterial[]
   products        Product[]
-  customers        Customer[]
-
+  customers       Customer[]
 
   @@map("companies")
 }

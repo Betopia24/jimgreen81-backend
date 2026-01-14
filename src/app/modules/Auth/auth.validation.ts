@@ -8,6 +8,17 @@ export const AuthValidation = {
     lastName: z.string({ required_error: "lastName is required" }).nonempty(),
     email: emailSchema,
     password: passwordSchema,
+    companyName: z
+      .string({
+        required_error: "companyName is required",
+      })
+      .nonempty(),
+    companyEmail: emailSchema,
+    companyLocation: z
+      .string({
+        required_error: "companyLocation is required",
+      })
+      .nonempty(),
   }),
 
   // login

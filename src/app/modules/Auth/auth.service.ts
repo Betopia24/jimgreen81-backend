@@ -36,12 +36,46 @@ export class AuthService {
       );
     }
 
+    // Check company email already exists
+    const companyEmailExist = await prisma.company.findUnique({
+      where: { email: data.email },
+    });
+    if (companyEmailExist) {
+      throw new AppError(
+        status.CONFLICT,
+        "Company already exists with this email!",
+      );
+    }
+
     // Hash password
     data.password = await PasswordHelper.hashedPassword(data.password);
 
     // Create user
     await prisma.user.create({
       data: { ...payload.data },
+    });
+
+    const { companyEmail, companyLocation, companyName, ...restData } =
+      payload.data;
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Create user
+      const newUser = await tx.user.create({
+        data: { ...restData },
+      });
+
+      // Create company
+      const newCompany = await tx.company.create({
+        data: {
+          name: companyName,
+          email: companyEmail,
+          location: companyLocation,
+        },
+      });
+
+      await tx.companyMember.create({
+        data: { companyId: newCompany.id, userId: newUser.id, role: "admin" },
+      });
     });
 
     // send otp

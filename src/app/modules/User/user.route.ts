@@ -14,7 +14,7 @@ router.get("/profile", auth(), UserController.getMyProfile);
 router.put(
   "/profile",
   auth(),
-  requestValidate(userValidationSchema.updateUser),
+  requestValidate(userValidationSchema.updateProfile),
   UserController.updateProfile,
 );
 
@@ -32,16 +32,12 @@ router.delete("/profile", auth(), UserController.deleteAccount);
 // ========== Admin ===========
 
 // Get all  users
-router.get("/", auth("SUPER_ADMIN"), UserController.getAllUsers);
+router.get("/", auth("ADMIN"), UserController.getAllUsers);
 
 // Get single user by id
-router.get("/:id", auth("SUPER_ADMIN"), UserController.getSingleUser);
+router.get("/:id", auth("ADMIN"), UserController.getSingleUser);
 
 // Block User
-router.patch(
-  "/:id/status",
-  auth("SUPER_ADMIN"),
-  UserController.updateUserStatus,
-);
+router.patch("/:id/status", auth("ADMIN"), UserController.updateUserStatus);
 
 export const userRoutes = router;

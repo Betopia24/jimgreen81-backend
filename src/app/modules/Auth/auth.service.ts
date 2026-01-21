@@ -50,11 +50,6 @@ export class AuthService {
     // Hash password
     data.password = await PasswordHelper.hashedPassword(data.password);
 
-    // Create user
-    await prisma.user.create({
-      data: { ...payload.data },
-    });
-
     const { companyEmail, companyLocation, companyName, ...restData } =
       payload.data;
 
@@ -74,7 +69,7 @@ export class AuthService {
       });
 
       await tx.companyMember.create({
-        data: { companyId: newCompany.id, userId: newUser.id, role: "admin" },
+        data: { companyId: newCompany.id, id: newUser.id, role: "owner" },
       });
     });
 
@@ -197,6 +192,12 @@ export class AuthService {
     const parts = name.split(/\s+/);
     const firstName = parts[0] ?? "";
     const lastName = parts.length > 1 ? parts.slice(1).join(" ") : "";
+
+    const existUser = await prisma.user.findUnique({ where: { email } });
+
+    if (existUser) {
+      return this.getLoginTokens({ id: existUser.id, role: existUser.role });
+    }
 
     // Find existing user OR create new
     let user = await prisma.user.upsert({

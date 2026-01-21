@@ -3,6 +3,7 @@ import { AuthRoutes } from "../modules/Auth/auth.routes";
 import { userRoutes } from "../modules/User/user.route";
 import { categoryRoutes } from "../modules/Category/Category.routes";
 import { analyticsRoutes } from "../modules/Analytics/analytics.routes";
+import { CompanyRoutes } from "../modules/Company/company.route";
 
 const routers = Router();
 const moduleRoutes: { path: string; route: Router }[] = [
@@ -13,6 +14,10 @@ const moduleRoutes: { path: string; route: Router }[] = [
   {
     path: "/users",
     route: userRoutes,
+  },
+  {
+    path: "/company",
+    route: CompanyRoutes,
   },
   {
     path: "/categories",

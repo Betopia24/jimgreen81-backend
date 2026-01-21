@@ -7,14 +7,14 @@ const router = express.Router();
 // Get dashboard stats
 router.get(
   "/dashboard-stats",
-  auth("SUPER_ADMIN"),
+  auth("ADMIN"),
   analyticsController.getDashboardStats,
 );
 
 // Get Recent Activity
 router.get(
   "/recent-activities",
-  auth("SUPER_ADMIN"),
+  auth("ADMIN"),
   analyticsController.getRecentActivity,
 );
 

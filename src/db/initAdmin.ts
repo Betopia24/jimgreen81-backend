@@ -9,7 +9,7 @@ export const initiateAdmin = async () => {
     firstName: "Mr. Super",
     lastName: "Admin",
     email: config.admin.ADMIN_DEFAULT_EMAIL,
-    role: UserRole.SUPER_ADMIN,
+    role: UserRole.ADMIN,
   };
 
   const hashedPassword = await PasswordHelper.hashedPassword(

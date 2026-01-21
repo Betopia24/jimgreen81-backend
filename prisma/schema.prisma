@@ -39,7 +39,7 @@ enum AuthProvider {
 
 enum UserRole {
   USER
-  SUPER_ADMIN
+  ADMIN
 }
 
 enum UserTier {
@@ -88,18 +88,23 @@ model Company {
 }
 
 enum MemberRole {
-  admin
-  user
+  owner
+  member
+}
+
+enum MemberStatus {
+  active
+  inactive
 }
 
 model CompanyMember {
-  id              String       @id @default(auto()) @map("_id") @db.ObjectId
-  userId          String       @unique @db.ObjectId
+  id              String       @id @map("_id") @db.ObjectId
   companyId       String       @db.ObjectId
   role            MemberRole
+  status          MemberStatus @default(active)
 
-  user            User         @relation(fields: [userId], references: [id])
-  company         Company      @relation(fields: [userId], references: [id])
+  user            User         @relation(fields: [id], references: [id])
+  company         Company      @relation(fields: [companyId], references: [id])
 
   @@map("company_members")
 }

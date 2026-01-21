@@ -1,4 +1,4 @@
-import { IUserFilterRequest, TUpdateUser } from "./user.interface";
+import { IUserFilterRequest, TUpdateProfile } from "./user.interface";
 import {
   IPaginationOptions,
   PaginationHelper,
@@ -20,17 +20,30 @@ export const UserService = {
       where: {
         id: userId,
       },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        avatar: true,
+        isEmailVerified: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        companyMember: {
+          select: { role: true, companyId: true, status: true },
+        },
+      },
     });
 
     if (!userInfo) throw new AppError(httpStatus.NOT_FOUND, "User not Found!");
 
-    const { password, provider, ...result } = userInfo;
-
-    return result;
+    return userInfo;
   },
 
   // Update own profile
-  updateProfile: async (payload: { userId: string; data: TUpdateUser }) => {
+  updateProfile: async (payload: { userId: string; data: TUpdateProfile }) => {
     const { userId, data } = payload;
 
     const userInfo = await prisma.user.findUnique({
@@ -159,6 +172,9 @@ export const UserService = {
         tier: true,
         createdAt: true,
         updatedAt: true,
+        companyMember: {
+          select: { id: true, companyId: true, role: true, status: true },
+        },
       },
       orderBy:
         sortBy && sortOrder
@@ -201,6 +217,9 @@ export const UserService = {
         status: true,
         createdAt: true,
         updatedAt: true,
+        companyMember: {
+          select: { id: true, companyId: true, role: true, status: true },
+        },
       },
     });
 
@@ -244,9 +263,21 @@ export const UserService = {
       where: {
         id: id,
       },
+      include: {
+        companyMember: {
+          select: { id: true, status: true, role: true, companyId: true },
+        },
+      },
     });
 
     if (!userInfo) throw new AppError(httpStatus.NOT_FOUND, "User not found!");
+
+    if (userInfo.companyMember && userInfo.companyMember.role === "owner") {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "You are a company owner you can't delete you account, please transfer ownership",
+      );
+    }
 
     const result = await prisma.user.delete({
       where: {

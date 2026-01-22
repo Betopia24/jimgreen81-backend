@@ -58,8 +58,8 @@ export const UserService = {
 
     // check already other use this email
     if (data.email) {
-      const existEmail = await prisma.user.findUnique({
-        where: { email: data.email, NOT: { id: userInfo.id } },
+      const existEmail = await prisma.user.findFirst({
+        where: { email: data.email, id: { not: userInfo.id } },
       });
 
       if (existEmail) {

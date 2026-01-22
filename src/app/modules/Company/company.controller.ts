@@ -34,23 +34,9 @@ export const CompanyController = {
     });
   }),
 
-  // Update Member Activation
-  updateMemberActivation: catchAsync(async (req, res) => {
-    const result = await CompanyService.updateMemberActivation({
-      memberId: req.params.memberId,
-    });
-
-    sendResponse(res, {
-      success: true,
-      statusCode: httpStatus.OK,
-      message: "Member activation successfully updated",
-      data: result,
-    });
-  }),
-
   // Get Member List
   getMemberList: catchAsync(async (req, res) => {
-    const result = await CompanyService.getCompanyInfo({
+    const result = await CompanyService.getMemberList({
       companyId: req.params.id,
     });
     sendResponse(res, {

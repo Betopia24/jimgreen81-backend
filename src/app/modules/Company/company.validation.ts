@@ -7,6 +7,7 @@ export const CompanyValidationSchema = {
     lastName: z.string().nonempty().optional(),
     email: emailSchema.optional(),
     password: passwordSchema.optional(),
+    status: z.enum(["active", "inactive"]).optional(),
   }),
 
   // add new member

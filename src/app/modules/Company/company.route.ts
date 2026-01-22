@@ -7,6 +7,23 @@ import { companyAccess } from "../../middlewares/companyAccess";
 
 const router = express.Router();
 
+// Get Company Info
+router.get(
+  "/:id",
+  auth(),
+  companyAccess("owner", "member"),
+  CompanyController.getCompanyInfo,
+);
+
+// Update Company Info
+router.put(
+  "/:id",
+  auth(),
+  companyAccess("owner"),
+  validateRequest(CompanyValidationSchema.updateCompanyInfo),
+  CompanyController.updateCompanyInfo,
+);
+
 // Add New Member
 router.post(
   "/:id/members",
@@ -14,23 +31,6 @@ router.post(
   companyAccess("owner"),
   validateRequest(CompanyValidationSchema.addNewMember),
   CompanyController.addNewMember,
-);
-
-// Update Member Info
-router.put(
-  "/:id/members/:memberId",
-  auth(),
-  companyAccess("owner"),
-  validateRequest(CompanyValidationSchema.updateMemberInfo),
-  CompanyController.updateMemberInfo,
-);
-
-// Update Member Activation
-router.patch(
-  "/:id/members/:memberId",
-  auth(),
-  companyAccess("owner"),
-  CompanyController.updateMemberActivation,
 );
 
 // Get Member List
@@ -49,29 +49,21 @@ router.get(
   CompanyController.getSingleMemberInfo,
 );
 
+// Update Member Info
+router.put(
+  "/:id/members/:memberId",
+  auth(),
+  companyAccess("owner"),
+  validateRequest(CompanyValidationSchema.updateMemberInfo),
+  CompanyController.updateMemberInfo,
+);
+
 // Delete Member
 router.delete(
   "/:id/members/:memberId",
   auth(),
   companyAccess("owner"),
   CompanyController.deleteMember,
-);
-
-// Get Company Info
-router.get(
-  "/:id",
-  auth(),
-  companyAccess("owner", "member"),
-  CompanyController.getCompanyInfo,
-);
-
-// Update Company Info
-router.put(
-  "/:id",
-  auth(),
-  companyAccess("owner"),
-  validateRequest(CompanyValidationSchema.updateCompanyInfo),
-  CompanyController.updateCompanyInfo,
 );
 
 export const CompanyRoutes = router;

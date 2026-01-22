@@ -79,8 +79,8 @@ export const CompanyService = {
 
     // check already other use this email
     if (data.email) {
-      const existEmail = await prisma.user.findUnique({
-        where: { email: data.email, NOT: { id: memberInfo.id } },
+      const existEmail = await prisma.user.findFirst({
+        where: { email: data.email, id: { not: memberInfo.id } },
       });
 
       if (existEmail) {
@@ -88,28 +88,46 @@ export const CompanyService = {
       }
     }
 
-    // Update the member info with the new information
-    const result = await prisma.user.update({
-      where: {
-        id: memberInfo.id,
-      },
-      data: payload.data,
-    });
-  },
+    const { status, ...userData } = payload.data;
 
-  // Update Member Activation
-  updateMemberActivation: async (payload: { memberId: string }) => {
-    const existMember = await prisma.companyMember.findUnique({
-      where: { id: payload.memberId },
-    });
+    const result = await prisma.$transaction(async (tx) => {
+      // Update the member info with the new information
+      const userResult = await tx.user.update({
+        where: {
+          id: memberInfo.id,
+        },
+        data: userData,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          avatar: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          companyMember: {
+            select: { role: true, companyId: true, status: true },
+          },
+        },
+      });
 
-    if (!existMember) {
-      throw new AppError(httpStatus.NOT_FOUND, "Member not found!");
-    }
+      // status update
+      if (status) {
+        await prisma.companyMember.update({
+          where: { id: memberId },
+          data: {
+            status: status,
+          },
+        });
 
-    const result = await prisma.companyMember.update({
-      where: { id: existMember.id },
-      data: { status: existMember.status === "active" ? "inactive" : "active" },
+        return {
+          ...userResult,
+          companyMember: { ...userResult.companyMember, status: status },
+        };
+      }
+
+      return userResult;
     });
 
     return result;
@@ -187,6 +205,22 @@ export const CompanyService = {
     if (!memberInfo) {
       throw new AppError(404, "member not found");
     }
+
+    if (memberInfo.companyMember?.role === "owner") {
+      throw new AppError(404, "company owner can't deletable");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // delete member list first
+      await tx.companyMember.delete({
+        where: { id: memberInfo.id },
+      });
+
+      // then delete user
+      await tx.user.delete({
+        where: { id: memberInfo.id },
+      });
+    });
 
     await prisma.user.delete({
       where: {

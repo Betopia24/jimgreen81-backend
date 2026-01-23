@@ -120,7 +120,7 @@ model RawMaterial {
   safetyClassification  String // Hazardous, Non-hazardous
   instructions          String
   isActive              Boolean      @default(true)
-  companyId       String       @db.ObjectId
+  companyId             String       @db.ObjectId
 
   company         Company      @relation(fields: [companyId], references: [id])
  

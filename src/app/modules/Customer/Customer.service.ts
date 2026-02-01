@@ -79,9 +79,10 @@ const deleteCustomer = async (id: string) => {
     throw new AppError(status.NOT_FOUND, "Customer not found!");
   }
 
-  await prisma.customer.delete({
-    where: { id },
-  });
+  await prisma.$transaction([
+    prisma.asset.deleteMany({ where: { customerId: id } }),
+    prisma.customer.delete({ where: { id } }),
+  ]);
 
   return null;
 };

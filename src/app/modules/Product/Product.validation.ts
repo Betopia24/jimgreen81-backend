@@ -38,6 +38,7 @@ const createProductSchema = z
     averageMonthlyConsumption: z
       .string()
       .min(1, "Average monthly consumption is required"),
+    consumptionType: z.string().min(1, "consumptionType is required"),
     replacementFrequency: z.enum(
       ["monthly", "quarterly", "semi-annually", "annually"],
       {
@@ -72,6 +73,7 @@ const updateProductSchema = z.object({
   compatibilityNote: z.string().min(1).optional(),
   costPerUnit: z.number().positive().optional(),
   averageMonthlyConsumption: z.string().min(1).optional(),
+  consumptionType: z.string().optional(),
   replacementFrequency: z
     .enum(["monthly", "quarterly", "semi-annually", "annually"])
     .optional(),

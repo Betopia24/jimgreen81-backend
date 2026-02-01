@@ -103,8 +103,8 @@ model CompanyMember {
   role            MemberRole
   status          MemberStatus @default(active)
 
-  user            User         @relation(fields: [id], references: [id])
-  company         Company      @relation(fields: [companyId], references: [id])
+  user            User         @relation(fields: [id], references: [id],onDelete: Cascade)
+  company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
 
   @@map("company_members")
 }
@@ -116,13 +116,14 @@ model RawMaterial {
   chemicalType          String // Corrosion Inhibitor, Biocide,Scale Inhibitor,  Dispersant, Other 
   supplierName          String
   dosageRate            String // ppm, mg/L
+  dosageType            String // ppm, mg/L
   feedFrequency         String // Daily, weekly
   safetyClassification  String // Hazardous, Non-hazardous
   instructions          String
   isActive              Boolean      @default(true)
   companyId             String       @db.ObjectId
 
-  company         Company      @relation(fields: [companyId], references: [id])
+  company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
  
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
@@ -143,12 +144,13 @@ model Product {
   maximumHardnessAllowed    String // e.g Treatment Chemical, Testing Reagent, Cleaning Agent, Additive
   compatibilityNote         String
   costPerUnit               Int 
-  averageMonthlyConsumption String // ppm, L, kg, gal
+  averageMonthlyConsumption String // L, kg, gal
+  consumptionType           String
   replacementFrequency      String // e.g monthly, quarterly, semi-annually, annually
-  isActive              Boolean      @default(true)
-  companyId       String       @db.ObjectId
+  isActive                  Boolean      @default(true)
+  companyId                 String       @db.ObjectId
 
-  company         Company      @relation(fields: [companyId], references: [id])
+  company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
 
   createdAt                 DateTime     @default(now())
   updatedAt                 DateTime     @updatedAt
@@ -169,7 +171,7 @@ model Customer {
   isActive        Boolean      @default(true)
   companyId       String       @db.ObjectId
 
-  company         Company      @relation(fields: [companyId], references: [id])
+  company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
 
   assets          Asset[]
 
@@ -195,7 +197,7 @@ model Asset {
   knownIssues           String
   customerId            String       @db.ObjectId
 
-  customer              Customer      @relation(fields: [customerId], references: [id])
+  customer              Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt

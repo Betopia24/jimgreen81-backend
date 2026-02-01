@@ -16,10 +16,9 @@ const createRawMaterialSchema = z.object({
   ),
   supplierName: z.string().min(1, "Supplier name is required"),
   dosageRate: z.string().min(1, "Dosage rate is required"),
+  dosageType: z.enum(["ppm", "mg/L"]),
   feedFrequency: z.string().min(1, "Feed frequency is required"),
-  safetyClassification: z.enum(["Hazardous", "Non-hazardous"], {
-    errorMap: () => ({ message: "Invalid safety classification" }),
-  }),
+  safetyClassification: z.string().min(1, "safetyClassification is required"),
   instructions: z.string().min(1, "Instructions are required"),
   isActive: z.boolean().optional(),
   companyId: z.string().min(1, "Company ID is required"),
@@ -38,8 +37,9 @@ const updateRawMaterialSchema = z.object({
     .optional(),
   supplierName: z.string().min(1).optional(),
   dosageRate: z.string().min(1).optional(),
+  dosageType: z.enum(["ppm", "mg/L"]).optional(),
   feedFrequency: z.string().min(1).optional(),
-  safetyClassification: z.enum(["Hazardous", "Non-hazardous"]).optional(),
+  safetyClassification: z.string().optional(),
   instructions: z.string().min(1).optional(),
   isActive: z.boolean().optional(),
 });

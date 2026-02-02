@@ -2,7 +2,6 @@ import { productRoutes } from "./../modules/Product/Product.route";
 import { Router } from "express";
 import { AuthRoutes } from "../modules/Auth/auth.routes";
 import { userRoutes } from "../modules/User/user.route";
-import { categoryRoutes } from "../modules/Category/Category.routes";
 import { analyticsRoutes } from "../modules/Analytics/analytics.routes";
 import { CompanyRoutes } from "../modules/Company/company.route";
 import { rawMaterialRoutes } from "../modules/RawMaterial/rawMaterial.route";
@@ -38,10 +37,6 @@ const moduleRoutes: { path: string; route: Router }[] = [
   {
     path: "/assets",
     route: assetRoutes,
-  },
-  {
-    path: "/categories",
-    route: categoryRoutes,
   },
   {
     path: "/analytics",

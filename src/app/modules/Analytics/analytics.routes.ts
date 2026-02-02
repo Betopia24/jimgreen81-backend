@@ -4,6 +4,13 @@ import { auth } from "../../middlewares/auth";
 
 const router = express.Router();
 
+// Get Super admin dashboard overview
+router.get(
+  "/superadmin/dashboard-overview",
+  auth(),
+  analyticsController.getSuperAdminDashboardOverview,
+);
+
 // Get dashboard stats
 router.get(
   "/dashboard-stats",

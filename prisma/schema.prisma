@@ -208,7 +208,7 @@ model Asset {
 
 // =========================== Subscription ==========================
 
-enum PlanStatus {
+enum PlanName {
   BASIC
   ADVANCED
   EXPERT
@@ -216,13 +216,14 @@ enum PlanStatus {
 
 model Plan {
   id              String       @id @default(auto()) @map("_id") @db.ObjectId
-  name            String
+  name            PlanName
+  isActive        Boolean      @default(true)          
   monthlyPrice    Int
   annualPrice     Int
   description     String
-  features        String[]
-  isActive        Boolean      @default(true)          
-  maxReport       Int
+  maxReports      Int
+  maxAccounts     Int
+  features        Json
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -230,14 +231,62 @@ model Plan {
   @@map("plans")
 }
 
-model Category {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  orderIndex  Int
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+// ===================== Subscription ===========================
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  UNPAID
+  INCOMPLETE
+  TRIALING
+}
 
-  @@map("categories")
+model Subscription {
+  id                    String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String             @db.ObjectId @unique
+  stripeCustomerId      String             @unique
+  stripeSubscriptionId  String?            @unique   // set by webhook
+  planDetails           Json                  
+  status                SubscriptionStatus @default(PAST_DUE)
+
+  startDate DateTime
+  endDate   DateTime
+  
+  // Optional lifecycle flags
+  cancelAtPeriodEnd      Boolean  @default(false)
+  canceledAt             DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user                  User               @relation(fields: [userId], references: [id])
+
+  @@index([status])
+  @@map("subscriptions")
+}
+
+// ================ Transaction ==============================
+enum TransactionStatus {
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model Transaction {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  reference         String   @unique  // paymentIntentId
+  amount            Int
+  currency          String
+  status            TransactionStatus
+  createdAt         DateTime @default(now())
+  subscriptionId    String
+
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("transactions")
 }
 
 model RecentActivity {
@@ -249,23 +298,3 @@ model RecentActivity {
 
   @@map("recent_activities")
 }
-
-
-// model find when upload analysis image {
-//   id                String       @id @default(auto()) @map("_id") @db.ObjectId
-//   ph                String
-//   calcium           String
-//   magnesium         String
-//   sodium            String
-//   chloride          String
-//   sulfate           String
-//   iron              String
-//   temperature       String
-//   totalAlkalinity   String
-//   tds               String
-
-//   createdAt         DateTime     @default(now())
-//   updatedAt         DateTime     @updatedAt
-
-//   @@map("raw_materials")
-// }

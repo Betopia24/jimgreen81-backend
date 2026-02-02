@@ -7,6 +7,7 @@ import { CompanyRoutes } from "../modules/Company/company.route";
 import { rawMaterialRoutes } from "../modules/RawMaterial/rawMaterial.route";
 import { customerRoutes } from "../modules/Customer/Customer.route";
 import { assetRoutes } from "../modules/Asset/Asset.route";
+import { reportAnalysisRoutes } from "../modules/ReportAnalycis/reportAnalysis.routes";
 
 const routers = Router();
 const moduleRoutes: { path: string; route: Router }[] = [
@@ -41,6 +42,10 @@ const moduleRoutes: { path: string; route: Router }[] = [
   {
     path: "/analytics",
     route: analyticsRoutes,
+  },
+  {
+    path: "/report-analysis",
+    route: reportAnalysisRoutes,
   },
 ];
 

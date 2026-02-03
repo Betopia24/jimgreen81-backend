@@ -286,8 +286,10 @@ export const UserService = {
     });
 
     await recentActivityLog({
-      actionType: "ACCOUNT_DELETED",
-      message: `${result.firstName + result.lastName}, Deleted Own Account`,
+      activityFor: "SUPER_ADMIN",
+      performerName: `${result.firstName + result.lastName}`,
+      performerImage: result.avatar,
+      message: `Deleted Own Account`,
     });
 
     const { password, provider, isEmailVerified, ...resultData } = result;

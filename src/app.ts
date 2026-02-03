@@ -7,6 +7,7 @@ import routers from "./app/routes";
 import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
 import config from "./config";
 import logger from "./utils/logger";
+import rawRouter from "./app/routes/rawRoute";
 
 class App {
   public app: express.Application;
@@ -19,6 +20,9 @@ class App {
   }
 
   private config() {
+    // raw routes
+    this.app.use(rawRouter);
+
     this.app.use(
       cors({
         origin: [config.FRONTEND_URL, "http://localhost:3000"],

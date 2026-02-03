@@ -1,14 +1,12 @@
 import prisma from "../db/prisma";
 
-export type TActActionType =
-  | "ACCOUNT_CREATED"
-  | "ACCOUNT_DELETED"
-  | "PAYMENT_RECEIVED"
-  | "PAYMENT_FAILED";
+export type TActivityFor = "SUPER_ADMIN" | "COMPANY_OWNER";
 
 export type TActivity = {
-  actionType: TActActionType;
-  message?: string;
+  activityFor: TActivityFor;
+  message: string;
+  performerName: string;
+  performerImage?: string | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   details?: any;
 };

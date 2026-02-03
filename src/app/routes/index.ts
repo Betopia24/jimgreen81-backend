@@ -8,6 +8,8 @@ import { rawMaterialRoutes } from "../modules/RawMaterial/rawMaterial.route";
 import { customerRoutes } from "../modules/Customer/Customer.route";
 import { assetRoutes } from "../modules/Asset/Asset.route";
 import { reportAnalysisRoutes } from "../modules/ReportAnalycis/reportAnalysis.routes";
+import { PlanRoutes } from "../modules/Plan/plan.route";
+
 
 const routers = Router();
 const moduleRoutes: { path: string; route: Router }[] = [
@@ -47,6 +49,10 @@ const moduleRoutes: { path: string; route: Router }[] = [
     path: "/report-analysis",
     route: reportAnalysisRoutes,
   },
+  {
+    path: "/plans",
+    route: PlanRoutes,
+  }
 ];
 
 moduleRoutes.forEach((route) => routers.use(route.path, route.route));

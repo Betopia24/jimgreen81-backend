@@ -3,6 +3,7 @@ import AppError from "../../../errors/AppError";
 import prisma from "../../../db/prisma";
 import { stripe } from "../../../config/stripe";
 import Stripe from "stripe";
+import { recentActivityLog } from "../../../helpers/recentActivity";
 
 export const PaymentService = {
   /* ===========================
@@ -226,13 +227,18 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
 
   const { companyId, planType } = paymentIntent.metadata;
 
+  const companyMember = await prisma.companyMember.findFirst({
+    where: { companyId, role: "owner" },
+    select: { user: true },
+  });
+
   const startDate = new Date();
   const endDate =
     planType === "annually"
       ? new Date(startDate.setFullYear(startDate.getFullYear() + 1))
       : new Date(startDate.setMonth(startDate.getMonth() + 1));
 
-  await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const subscription = await tx.subscription.update({
       where: { companyId },
       data: {
@@ -252,6 +258,18 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         status: "SUCCEEDED",
       },
     });
+
+    return subscription;
+  });
+
+  await recentActivityLog({
+    activityFor: "SUPER_ADMIN",
+    performerName: companyMember
+      ? companyMember.user.firstName + companyMember.user.firstName
+      : "Company Member",
+    performerImage: companyMember?.user.avatar,
+    message: `Upgraded to ${(result.planSnapshot as any).name}`,
+    details: result,
   });
 }
 

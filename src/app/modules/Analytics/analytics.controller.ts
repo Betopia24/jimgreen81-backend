@@ -14,30 +14,20 @@ const getSuperAdminDashboardOverview = catchAsync(async (req, res) => {
   });
 });
 
-const getDashboardStats = catchAsync(async (req, res) => {
-  const result = await analyticsService.getDashboardStats();
+const getAdminDashboardOverview = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+
+  const result = await analyticsService.getAdminDashboardOverview(userId);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "Successfully Get Dashboard Stats",
-    data: result,
-  });
-});
-
-const getRecentActivity = catchAsync(async (req, res) => {
-  const result = await analyticsService.getRecentActivity();
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Successfully Get Recent Activity",
+    message: "Successfully Get Admin Dashboard Overview",
     data: result,
   });
 });
 
 export const analyticsController = {
   getSuperAdminDashboardOverview,
-  getDashboardStats,
-  getRecentActivity,
+  getAdminDashboardOverview,
 };

@@ -13,7 +13,7 @@ export const AuthValidation = {
         required_error: "companyName is required",
       })
       .nonempty(),
-    companyEmail: emailSchema,
+    companyEmail: emailSchema.optional(),
     companyLocation: z
       .string({
         required_error: "companyLocation is required",

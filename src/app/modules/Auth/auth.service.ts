@@ -38,14 +38,16 @@ export class AuthService {
     }
 
     // Check company email already exists
-    const companyEmailExist = await prisma.company.findUnique({
-      where: { email: data.email },
-    });
-    if (companyEmailExist) {
-      throw new AppError(
-        status.CONFLICT,
-        "Company already exists with this email!",
-      );
+    if (data.companyEmail) {
+      const companyEmailExist = await prisma.company.findUnique({
+        where: { email: data.email },
+      });
+      if (companyEmailExist) {
+        throw new AppError(
+          status.CONFLICT,
+          "Company already exists with this email!",
+        );
+      }
     }
 
     // Hash password

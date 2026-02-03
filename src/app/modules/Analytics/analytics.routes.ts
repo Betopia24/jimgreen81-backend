@@ -6,23 +6,16 @@ const router = express.Router();
 
 // Get Super admin dashboard overview
 router.get(
-  "/superadmin/dashboard-overview",
+  "/super-admin/dashboard-overview",
   auth(),
   analyticsController.getSuperAdminDashboardOverview,
 );
 
-// Get dashboard stats
+// Get Super admin dashboard overview
 router.get(
-  "/dashboard-stats",
-  auth("ADMIN"),
-  analyticsController.getDashboardStats,
-);
-
-// Get Recent Activity
-router.get(
-  "/recent-activities",
-  auth("ADMIN"),
-  analyticsController.getRecentActivity,
+  "/admin/dashboard-overview",
+  auth(),
+  analyticsController.getAdminDashboardOverview,
 );
 
 export const analyticsRoutes = router;

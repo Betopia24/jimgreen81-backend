@@ -18,6 +18,7 @@ import {
 } from "./auth.interface";
 import { PasswordHelper } from "../../../helpers/password";
 import JwtHelper from "../../../helpers/jwtHelpers";
+import { recentActivityLog } from "../../../helpers/recentActivity";
 
 export class AuthService {
   // Create Account
@@ -71,6 +72,15 @@ export class AuthService {
       await tx.companyMember.create({
         data: { companyId: newCompany.id, id: newUser.id, role: "owner" },
       });
+
+      return newUser;
+    });
+
+    await recentActivityLog({
+      activityFor: "SUPER_ADMIN",
+      performerName: `${result.firstName + result.lastName}`,
+      performerImage: result.avatar,
+      message: "New signup",
     });
 
     // send otp

@@ -66,10 +66,6 @@ model User {
   isEmailVerified Boolean      @default(false)
 
   companyMember   CompanyMember?
-  subscriptions   Subscription[]
-  transactions    Transaction[]
-
-
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -86,6 +82,9 @@ model Company {
   rawMaterials    RawMaterial[]
   products        Product[]
   customers       Customer[]
+
+  subscriptions   Subscription[]
+  transactions    Transaction[]
 
   @@map("companies")
 }
@@ -208,9 +207,7 @@ model Asset {
   @@map("assets")
 }
 
-
-// =========================== Subscription ==========================
-
+// =========================== PLAN ==========================
 enum PlanName {
   BASIC
   ADVANCED
@@ -218,58 +215,57 @@ enum PlanName {
 }
 
 model Plan {
-  id              String       @id @default(auto()) @map("_id") @db.ObjectId
-  name            PlanName
-  isActive        Boolean      @default(true)          
-  monthlyPrice    Int
-  annualPrice     Int
-  description     String
-  maxReports      Int
-  maxAccounts     Int
-  features        Json
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        PlanName
+  isActive    Boolean  @default(true)
+  monthlyPrice Int
+  annualPrice  Int
+  description String
+  maxReports  Int
+  maxAccounts Int
+  features    Json
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions Subscription[]
 
   @@map("plans")
 }
 
-// ===================== Subscription ===========================
+// =========================== SUBSCRIPTION ==========================
 enum SubscriptionStatus {
   ACTIVE
-  CANCELED
-  PAST_DUE
-  UNPAID
   INCOMPLETE
-  TRIALING
+  CANCELED
 }
 
 model Subscription {
-  id                    String             @id @default(auto()) @map("_id") @db.ObjectId
-  userId                String             @db.ObjectId @unique
-  stripeCustomerId      String             @unique
-  stripeSubscriptionId  String?            @unique   // set by webhook
-  planDetails           Json                  
-  status                SubscriptionStatus @default(PAST_DUE)
+  id                String             @id @default(auto()) @map("_id") @db.ObjectId
+  companyId         String             @db.ObjectId @unique
+  paymentIntentId   String             @unique
+  planId            String             @db.ObjectId
+  planType          String             // monthly / annually
+  status            SubscriptionStatus @default(INCOMPLETE)
 
-  startDate DateTime
-  endDate   DateTime
-  
-  // Optional lifecycle flags
-  cancelAtPeriodEnd      Boolean  @default(false)
-  canceledAt             DateTime?
+  // plan snapshot
+  planSnapshot      Json
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  startDate         DateTime
+  endDate           DateTime
+  canceledAt        DateTime?
 
-  user                  User               @relation(fields: [userId], references: [id])
-  transactions          Transaction[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  @@index([status])
+  company           Company    @relation(fields: [companyId], references: [id])
+  plan              Plan       @relation(fields: [planId], references: [id])
+  transactions      Transaction[]
+
   @@map("subscriptions")
 }
 
-// ================ Transaction ==============================
+// =========================== TRANSACTION ==========================
 enum TransactionStatus {
   SUCCEEDED
   FAILED
@@ -277,28 +273,36 @@ enum TransactionStatus {
 }
 
 model Transaction {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String   @db.ObjectId
-  reference         String   @unique  // paymentIntentId
-  amount            Int
-  currency          String
-  status            TransactionStatus
-  createdAt         DateTime @default(now())
-  subscriptionId    String
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId      String   @db.ObjectId
+  subscriptionId String   @db.ObjectId
+  reference      String   @unique // paymentIntentId
+  amount         Int
+  currency       String
+  status         TransactionStatus
+  createdAt      DateTime @default(now())
 
+  company        Company         @relation(fields: [companyId], references: [id])
   subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-
-  user       User     @relation(fields: [userId], references: [id])
 
   @@map("transactions")
 }
 
+
+// =================== Recent Activity ======================
+enum ActivityFor {
+  SUPER_ADMIN
+  COMPANY_OWNER
+}
+
 model RecentActivity {
-  id            String       @id @default(auto()) @map("_id") @db.ObjectId
-  actionType    String
-  message       String?
-  details       Json?
-  createdAt DateTime @default(now())
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  activityFor     ActivityFor
+  message         String
+  performerName   String
+  performerImage  String?      
+  details         Json?
+  createdAt       DateTime @default(now())
 
   @@map("recent_activities")
 }

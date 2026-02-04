@@ -25,7 +25,12 @@ class App {
 
     this.app.use(
       cors({
-        origin: [config.FRONTEND_URL, "http://localhost:3000"],
+        origin: [
+          config.FRONTEND_URL,
+          "http://localhost:3000",
+          "http://localhost:3008",
+          "http://206.162.244.131:3008",
+        ],
         credentials: true,
         methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
         allowedHeaders: ["Content-Type", "Authorization"],

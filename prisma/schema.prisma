@@ -82,6 +82,7 @@ model Company {
   rawMaterials    RawMaterial[]
   products        Product[]
   customers       Customer[]
+  reports         Report[]
 
   subscriptions   Subscription[]
   transactions    Transaction[]
@@ -176,6 +177,7 @@ model Customer {
   company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
 
   assets          Asset[]
+  reports         Report[]
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -205,6 +207,43 @@ model Asset {
   updatedAt             DateTime     @updatedAt
 
   @@map("assets")
+}
+
+// =========================== Report ==========================
+model Report {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  companyId       String       @db.ObjectId
+  customerId      String       @db.ObjectId
+  reportId        String       @unique
+
+  company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
+  customer        Customer     @relation(fields: [customerId], references: [id],onDelete: Cascade)
+  waterReport     WaterReport  @relation(fields: [reportId], references: [reportId],onDelete: Cascade)
+
+  @@map("reports")
+}
+
+// =========================== Water Report ==========================
+model WaterReport {
+  id                    String       @id @default(auto()) @map("_id") @db.ObjectId
+  reportId              String       @unique
+  sampleLocation        String?
+  sampleDate            DateTime?
+  originalFilename      String?
+  extractedParameters   Json?
+  parameterGraph        Json?
+  chemicalStatus        Json?
+  totalScore            Json?
+  qualityReport         Json?
+  chemicalComposition   Json?
+  biologicalIndicators  Json?
+  complianceChecklist   Json?
+  contaminationRisk     Json?
+
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@map("water_reports")
 }
 
 // =========================== PLAN ==========================

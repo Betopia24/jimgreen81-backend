@@ -146,6 +146,23 @@ export class AuthService {
   static loginUser = async (payload: TLogin) => {
     const user = await prisma.user.findUnique({
       where: { email: payload.email },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        password: true,
+        provider: true,
+        avatar: true,
+        isEmailVerified: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        companyMember: {
+          select: { role: true, companyId: true, status: true },
+        },
+      },
     });
 
     if (!user) {
@@ -181,7 +198,11 @@ export class AuthService {
       throw new AppError(status.UNAUTHORIZED, "Password is incorrect!");
     }
 
-    return this.getLoginTokens({ id: user.id, role: user.role });
+    const { password, provider, ...restUserResult } = user;
+
+    const tokens = this.getLoginTokens({ id: user.id, role: user.role });
+
+    return { ...tokens, user: restUserResult };
   };
 
   // Social Login

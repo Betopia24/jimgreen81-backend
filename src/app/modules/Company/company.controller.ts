@@ -75,6 +75,20 @@ export const CompanyController = {
     });
   }),
 
+  // Get Company List
+  getCompanyList: catchAsync(async (req, res) => {
+    console.log("list of company");
+
+    const result = await CompanyService.getCompanyList();
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Successfully retrieved company list",
+      data: result,
+    });
+  }),
+
   // Get Company Info
   getCompanyInfo: catchAsync(async (req, res) => {
     const result = await CompanyService.getCompanyInfo({
@@ -100,6 +114,20 @@ export const CompanyController = {
       success: true,
       statusCode: httpStatus.OK,
       message: "Company info successfully updated",
+      data: result,
+    });
+  }),
+
+  // Update Company Info
+  deleteCompany: catchAsync(async (req, res) => {
+    const result = await CompanyService.deleteCompany({
+      companyId: req.params.id,
+    });
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Company successfully deleted",
       data: result,
     });
   }),

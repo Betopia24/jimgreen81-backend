@@ -114,4 +114,18 @@ export const UserController = {
       data: result,
     });
   }),
+
+  // Delete User by id
+  deleteUserById: catchAsync(async (req, res) => {
+    const id = req.params.id;
+
+    const result = await UserService.deleteUserById(id);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "User Successfully Deleted",
+      data: result,
+    });
+  }),
 };

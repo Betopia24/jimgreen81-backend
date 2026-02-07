@@ -33,5 +33,6 @@ export const CompanyValidationSchema = {
       })
       .nonempty()
       .optional(),
+    isActive: z.boolean().optional(),
   }),
 };

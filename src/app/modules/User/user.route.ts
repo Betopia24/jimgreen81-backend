@@ -40,4 +40,7 @@ router.get("/:id", auth("ADMIN"), UserController.getSingleUser);
 // Block User
 router.patch("/:id/status", auth("ADMIN"), UserController.updateUserStatus);
 
+// Delete User by id
+router.delete("/:id", auth("ADMIN"), UserController.deleteUserById);
+
 export const userRoutes = router;

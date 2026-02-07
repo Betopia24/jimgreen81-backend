@@ -7,6 +7,9 @@ import { companyAccess } from "../../middlewares/companyAccess";
 
 const router = express.Router();
 
+// Get Company list
+router.get("/list", auth(), CompanyController.getCompanyList);
+
 // Get Company Info
 router.get(
   "/:id",
@@ -65,5 +68,8 @@ router.delete(
   companyAccess("owner"),
   CompanyController.deleteMember,
 );
+
+// Delete Company
+router.delete("/:id", auth("ADMIN"), CompanyController.deleteCompany);
 
 export const CompanyRoutes = router;

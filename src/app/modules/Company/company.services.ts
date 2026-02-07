@@ -222,13 +222,33 @@ export const CompanyService = {
       });
     });
 
-    await prisma.user.delete({
-      where: {
-        id: memberInfo.id,
+    return memberInfo;
+  },
+
+  // Get Company Info
+  getCompanyList: async () => {
+    const companies = await prisma.company.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        location: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        subscriptions: true,
+        _count: {
+          select: {
+            companyMembers: true,
+            rawMaterials: true,
+            products: true,
+            customers: true,
+          },
+        },
       },
     });
 
-    return memberInfo;
+    return companies;
   },
 
   // Get Company Info
@@ -276,6 +296,60 @@ export const CompanyService = {
     const result = await prisma.company.update({
       where: { id: companyId },
       data: data,
+    });
+
+    return result;
+  },
+
+  // Delete Company
+  deleteCompany: async (payload: { companyId: string }) => {
+    const { companyId } = payload;
+
+    const companyInfo = await prisma.company.findUnique({
+      where: { id: companyId },
+    });
+
+    if (!companyInfo) {
+      throw new AppError(httpStatus.NOT_FOUND, "Company not found!");
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.companyMember.deleteMany({
+        where: { companyId },
+      });
+
+      await tx.user.deleteMany({
+        where: { companyMember: { companyId } },
+      });
+
+      await tx.rawMaterial.deleteMany({
+        where: { companyId },
+      });
+
+      await tx.product.deleteMany({
+        where: { companyId },
+      });
+
+      const customerIds = await tx.customer
+        .findMany({
+          where: { companyId },
+          select: { id: true },
+        })
+        .then((customers) => customers.map((customer) => customer.id));
+
+      await tx.asset.deleteMany({
+        where: { customerId: { in: customerIds } },
+      });
+
+      await tx.customer.deleteMany({
+        where: { id: { in: customerIds } },
+      });
+
+      const deletedCompany = await prisma.company.delete({
+        where: { id: companyId },
+      });
+
+      return deletedCompany;
     });
 
     return result;

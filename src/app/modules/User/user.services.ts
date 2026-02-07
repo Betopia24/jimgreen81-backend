@@ -296,4 +296,35 @@ export const UserService = {
 
     return resultData;
   },
+
+  // Delete User by id
+  deleteUserById: async (id: string) => {
+    const userInfo = await prisma.user.findUnique({
+      where: {
+        id: id,
+      },
+      include: {
+        companyMember: {
+          select: { id: true, status: true, role: true, companyId: true },
+        },
+      },
+    });
+
+    if (!userInfo) throw new AppError(httpStatus.NOT_FOUND, "User not found!");
+
+    if (userInfo.companyMember && userInfo.companyMember.role === "owner") {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "This user is a company owner you can't delete this account, please transfer ownership",
+      );
+    }
+
+    const result = await prisma.user.delete({
+      where: {
+        id: userInfo.id,
+      },
+    });
+
+    return result;
+  },
 };

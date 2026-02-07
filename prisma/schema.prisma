@@ -78,6 +78,7 @@ model Company {
   name            String
   email           String?       @unique
   location        String
+  isActive        Boolean      @default(true)
   companyMembers  CompanyMember[]
   rawMaterials    RawMaterial[]
   products        Product[]
@@ -86,6 +87,9 @@ model Company {
 
   subscriptions   Subscription[]
   transactions    Transaction[]
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@map("companies")
 }
@@ -239,6 +243,7 @@ model WaterReport {
   biologicalIndicators  Json?
   complianceChecklist   Json?
   contaminationRisk     Json?
+  report                Report?
 
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt

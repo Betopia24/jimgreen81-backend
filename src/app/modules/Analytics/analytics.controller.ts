@@ -14,20 +14,20 @@ const getSuperAdminDashboardOverview = catchAsync(async (req, res) => {
   });
 });
 
-const getAdminDashboardOverview = catchAsync(async (req, res) => {
+const getOwnerAdminDashboardOverview = catchAsync(async (req, res) => {
   const userId = req.user.id;
 
-  const result = await analyticsService.getAdminDashboardOverview(userId);
+  const result = await analyticsService.getOwnerAdminDashboardOverview(userId);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "Successfully Get Admin Dashboard Overview",
+    message: "Successfully Get Owner Admin Dashboard Overview",
     data: result,
   });
 });
 
 export const analyticsController = {
   getSuperAdminDashboardOverview,
-  getAdminDashboardOverview,
+  getOwnerAdminDashboardOverview,
 };

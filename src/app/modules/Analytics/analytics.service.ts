@@ -1,10 +1,10 @@
 import { getSuperAdminDashboardOverview } from "./analytics.superAdmin";
 
-const getAdminDashboardOverview = async (userId: string) => {
+const getOwnerAdminDashboardOverview = async (userId: string) => {
   return userId;
 };
 
 export const analyticsService = {
   getSuperAdminDashboardOverview,
-  getAdminDashboardOverview,
+  getOwnerAdminDashboardOverview,
 };

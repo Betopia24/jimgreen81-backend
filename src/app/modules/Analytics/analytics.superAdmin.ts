@@ -1,9 +1,6 @@
+import { datetimeUtils } from "./../../../utils/datetime";
 import prisma from "../../../db/prisma";
-import {
-  endOfLastMonth,
-  startOfLastMonth,
-  startOfMonth,
-} from "../../../utils/datetime";
+import { percentageChange } from "./analytics.utils";
 
 export const getSuperAdminDashboardOverview = async () => {
   const stats = await getSuperAdminDashboardStats();
@@ -68,20 +65,13 @@ const getYearlySubscriptionGrowth = async (year: number) => {
 // ===========================================
 //       Super admin dashboard stats
 // ===========================================
-function percentageChange(current: number, previous: number): number {
-  if (previous === 0) {
-    return current > 0 ? 100 : 0;
-  }
-
-  return Number((((current - previous) / previous) * 100).toFixed(2));
-}
 
 const getSuperAdminDashboardStats = async () => {
   const now = new Date();
 
-  const thisMonthStart = startOfMonth(now);
-  const lastMonthStart = startOfLastMonth(now);
-  const lastMonthEnd = endOfLastMonth(now);
+  const thisMonthStart = datetimeUtils.startOfThisMonth(now);
+  const lastMonthStart = datetimeUtils.startOfLastMonth(now);
+  const lastMonthEnd = datetimeUtils.endOfLastMonth(now);
 
   // ============== USERS ==============
   const [totalUsers, thisMonthUsers, lastMonthUsers] = await Promise.all([

@@ -1,17 +1,33 @@
 import { Router } from "express";
 import { uploadFile } from "../../../upload/fileUpload";
 import { ReportAnalysisController } from "./reportAnalysis.controller";
+import { ReportAnalysisValidationSchema } from "./reportAnalysis.validation";
+import validateRequest from "../../middlewares/validateRequest";
 
 const router = Router();
 
-// Upload Report
+// Extract Report
 router.post(
-  "/upload-report",
+  "/extract-report",
   uploadFile.single("file"),
-  ReportAnalysisController.analyzeReportFile,
+  ReportAnalysisController.extractReportFile,
 );
 
-// Get Products By CompanyId
-// router.get("/company/:companyId", ProductController.getProductsByCompanyId);
+// Analyze Report
+router.post(
+  "/analyze-report",
+  validateRequest(ReportAnalysisValidationSchema.analyzeReport),
+  ReportAnalysisController.analyzeReport,
+);
+
+// Recalculate Report
+router.post(
+  "/recalculate-report",
+  validateRequest(ReportAnalysisValidationSchema.recalculateReport),
+  ReportAnalysisController.recalculateReport,
+);
+
+// Get Report History By CompanyId
+router.get("/history/:companyId", ReportAnalysisController.reportHistory);
 
 export const reportAnalysisRoutes = router;

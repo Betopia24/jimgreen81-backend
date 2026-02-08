@@ -13,9 +13,9 @@ router.get(
 
 // Get Super admin dashboard overview
 router.get(
-  "/admin/dashboard-overview",
+  "/owner-admin/dashboard-overview",
   auth(),
-  analyticsController.getAdminDashboardOverview,
+  analyticsController.getOwnerAdminDashboardOverview,
 );
 
 export const analyticsRoutes = router;

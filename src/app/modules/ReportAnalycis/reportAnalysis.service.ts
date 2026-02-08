@@ -2,6 +2,7 @@ import status from "http-status";
 import FormData from "form-data";
 import AppError from "../../../errors/AppError";
 import { aiClient } from "../../../config/aiClient";
+import prisma from "../../../db/prisma";
 
 const extractReportFile = async (payload: { file: Express.Multer.File }) => {
   if (!payload.file) {
@@ -35,7 +36,15 @@ const extractReportFile = async (payload: { file: Express.Multer.File }) => {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const analyzeReport = async (payload: { data: any }) => {
-  return payload;
+  const result = await prisma.report.create({
+    data: {
+      companyId: "69720ddcfbd00e45c48af57b",
+      waterReportId: "696732bf672add21ab74b104",
+      customerId: "697d83d177a7c34e08d7133b",
+    },
+  });
+
+  return result;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,9 +56,24 @@ const reportHistory = async (payload: { companyId: string }) => {
   return payload;
 };
 
+const getSingleReport = async (payload: { reportId: string }) => {
+  const report = await prisma.report.findUnique({
+    where: {
+      id: payload.reportId,
+    },
+    include: {
+      customer: true,
+      waterReport: true,
+    },
+  });
+
+  return report;
+};
+
 export const ReportAnalysisService = {
   extractReportFile,
   analyzeReport,
   recalculateReport,
   reportHistory,
+  getSingleReport,
 };

@@ -51,9 +51,22 @@ const reportHistory = catchAsync(async (req, res) => {
   });
 });
 
+const getSingleReport = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.getSingleReport({
+    reportId: req.params.reportId,
+  });
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    message: "Report Successfully Retrieved!",
+    data: result,
+  });
+});
+
 export const ReportAnalysisController = {
   extractReportFile,
   analyzeReport,
   recalculateReport,
   reportHistory,
+  getSingleReport,
 };

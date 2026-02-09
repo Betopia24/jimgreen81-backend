@@ -14,6 +14,13 @@ router.post(
   PlanController.createPlan,
 );
 
+// Get Plan Progress
+router.get(
+  "/distribution-progress",
+  auth(),
+  PlanController.getSubscriptionDistribution,
+);
+
 // Get all plans
 router.get("/", auth("ADMIN"), PlanController.getAllPlans);
 

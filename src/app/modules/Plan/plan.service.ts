@@ -132,4 +132,32 @@ export const PlanService = {
 
     return result;
   },
+
+  // Get plan progress (number of active subscriptions per plan)
+  getSubscriptionDistribution: async () => {
+    const transactions = await prisma.transaction.findMany({
+      where: { status: "SUCCEEDED" },
+      include: {
+        subscription: true,
+      },
+    });
+
+    const total = transactions.length;
+
+    const map: Record<string, number> = {};
+
+    transactions.forEach((tx) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const planName = (tx.subscription.planSnapshot as any)?.name;
+      if (!planName) return;
+
+      map[planName] = (map[planName] || 0) + 1;
+    });
+
+    return Object.entries(map).map(([plan, count]) => ({
+      plan,
+      users: count,
+      percentage: Number(((count / total) * 100).toFixed(0)),
+    }));
+  },
 };

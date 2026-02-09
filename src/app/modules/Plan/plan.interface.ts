@@ -1,39 +1,10 @@
-// Plan types without Zod validation
-export type TCreatePlan = {
-  name: "BASIC" | "ADVANCED" | "EXPERT";
-  isActive: boolean;
-  monthlyPrice: number;
-  annualPrice: number;
-  description: string;
-  maxReports: number;
-  maxAccounts: number;
-  features: {
-    aiAnalysis: boolean;
-    prioritySupport: boolean;
-    apiAccess: boolean;
-    customBranding: boolean;
-    dashboardAnalytics: boolean;
-    advancedReports: boolean;
-  };
-};
+import z from "zod";
+import { PlanValidation } from "./plan.validation";
 
-export type TUpdatePlan = {
-  name?: "BASIC" | "ADVANCED" | "EXPERT";
-  monthlyPrice?: number;
-  annualPrice?: number;
-  description?: string;
-  maxReports?: number;
-  maxAccounts?: number;
-  features?: {
-    aiAnalysis?: boolean;
-    prioritySupport?: boolean;
-    apiAccess?: boolean;
-    customBranding?: boolean;
-    dashboardAnalytics?: boolean;
-    advancedReports?: boolean;
-  };
-  isActive?: boolean;
-};
+// Plan types without Zod validation
+export type TCreatePlan = z.infer<typeof PlanValidation.createPlan>;
+
+export type TUpdatePlan = z.infer<typeof PlanValidation.updatePlan>;
 
 export type TPlanFilters = {
   searchTerm?: string;

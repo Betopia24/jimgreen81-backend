@@ -30,4 +30,7 @@ router.post(
 // Get Report History By CompanyId
 router.get("/history/:companyId", ReportAnalysisController.reportHistory);
 
+// Get Single Report
+router.get("/report/:reportId", ReportAnalysisController.getSingleReport);
+
 export const reportAnalysisRoutes = router;

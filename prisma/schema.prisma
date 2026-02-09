@@ -213,42 +213,45 @@ model Asset {
   @@map("assets")
 }
 
+// =========================== Water Report From AI ==========================
+model WaterReport {
+  id                      String       @id @default(auto()) @map("_id") @db.ObjectId
+  report_id               String       @unique
+  sample_location         String?
+  sample_date             String?
+  original_filename       String?
+  extracted_parameters    Json?
+  parameter_graph         Json?
+  chemical_status         Json?
+  total_score             Json?
+  quality_report          Json?
+  chemical_composition    Json?
+  biological_indicators   Json?
+  compliance_checklist    Json?
+  contamination_risk      Json?
+  report                  Report?
+
+  created_at               DateTime     @default(now())
+  updated_at               DateTime     @updatedAt
+
+  @@map("water_reports")
+}
+
 // =========================== Report ==========================
 model Report {
   id              String       @id @default(auto()) @map("_id") @db.ObjectId
   companyId       String       @db.ObjectId
   customerId      String       @db.ObjectId
-  reportId        String       @unique
+  waterReportId   String?      @db.ObjectId  @unique  // foreign key to WaterReport.id
 
   company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
   customer        Customer     @relation(fields: [customerId], references: [id],onDelete: Cascade)
-  waterReport     WaterReport  @relation(fields: [reportId], references: [reportId],onDelete: Cascade)
-
-  @@map("reports")
-}
-
-// =========================== Water Report ==========================
-model WaterReport {
-  id                    String       @id @default(auto()) @map("_id") @db.ObjectId
-  reportId              String       @unique
-  sampleLocation        String?
-  sampleDate            DateTime?
-  originalFilename      String?
-  extractedParameters   Json?
-  parameterGraph        Json?
-  chemicalStatus        Json?
-  totalScore            Json?
-  qualityReport         Json?
-  chemicalComposition   Json?
-  biologicalIndicators  Json?
-  complianceChecklist   Json?
-  contaminationRisk     Json?
-  report                Report?
+  waterReport     WaterReport? @relation(fields: [waterReportId], references: [id], onDelete: Cascade)
 
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
 
-  @@map("water_reports")
+  @@map("reports")
 }
 
 // =========================== PLAN ==========================

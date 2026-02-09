@@ -118,7 +118,19 @@ export const CompanyController = {
     });
   }),
 
-  // Update Company Info
+  // Update Company status
+  updateCompanyStatus: catchAsync(async (req, res) => {
+    const result = await CompanyService.updateCompanyStatus(req.params.id);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Company status successfully updated",
+      data: result,
+    });
+  }),
+
+  // Delete Company Info
   deleteCompany: catchAsync(async (req, res) => {
     const result = await CompanyService.deleteCompany({
       companyId: req.params.id,

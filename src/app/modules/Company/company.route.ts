@@ -70,6 +70,13 @@ router.delete(
 );
 
 // Delete Company
+router.patch(
+  "/:id/status",
+  auth("ADMIN"),
+  CompanyController.updateCompanyStatus,
+);
+
+// Delete Company
 router.delete("/:id", auth("ADMIN"), CompanyController.deleteCompany);
 
 export const CompanyRoutes = router;

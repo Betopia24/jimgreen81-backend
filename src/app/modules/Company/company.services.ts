@@ -301,6 +301,33 @@ export const CompanyService = {
     return result;
   },
 
+  // Update company Status
+  updateCompanyStatus: async (id: string) => {
+    const companyInfo = await prisma.company.findUnique({
+      where: {
+        id: id,
+      },
+    });
+
+    if (!companyInfo)
+      throw new AppError(httpStatus.NOT_FOUND, "Company not found!");
+
+    const result = await prisma.company.update({
+      where: {
+        id: companyInfo.id,
+      },
+      data: { isActive: companyInfo.isActive === true ? false : true },
+    });
+
+    if (!result)
+      throw new AppError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        "Failed to update company status!",
+      );
+
+    return companyInfo;
+  },
+
   // Delete Company
   deleteCompany: async (payload: { companyId: string }) => {
     const { companyId } = payload;

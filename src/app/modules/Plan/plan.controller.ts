@@ -78,4 +78,16 @@ export const PlanController = {
       data: result,
     });
   }),
+
+  // Get active plans
+  getSubscriptionDistribution: catchAsync(async (req, res) => {
+    const result = await PlanService.getSubscriptionDistribution();
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Subscription distribution retrieved successfully",
+      data: result,
+    });
+  }),
 };

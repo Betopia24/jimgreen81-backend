@@ -64,7 +64,6 @@ export const PaymentService = {
       amount,
       currency: "usd",
       payment_method_types: ["card"],
-      automatic_payment_methods: { enabled: true },
       metadata: {
         companyId,
         planId: plan.id,

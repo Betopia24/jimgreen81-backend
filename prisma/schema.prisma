@@ -270,7 +270,7 @@ model Plan {
   description String
   maxReports  Int
   maxAccounts Int
-  features    Json
+  features    String[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

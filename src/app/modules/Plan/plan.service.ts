@@ -3,7 +3,6 @@ import AppError from "../../../errors/AppError";
 import prisma from "../../../db/prisma";
 import { TCreatePlan, TUpdatePlan, TPlanFilters } from "./plan.interface";
 
-
 export const PlanService = {
   // Create a new plan
   createPlan: async (payload: TCreatePlan) => {
@@ -18,7 +17,7 @@ export const PlanService = {
     if (existingPlan) {
       throw new AppError(
         httpStatus.CONFLICT,
-        `Plan with name ${payload.name} already exists`
+        `Plan with name ${payload.name} already exists`,
       );
     }
 
@@ -33,6 +32,7 @@ export const PlanService = {
   getAllPlans: async (filters: TPlanFilters) => {
     const { searchTerm, name, isActive } = filters;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereConditions: any = {};
 
     // Add search functionality
@@ -82,25 +82,20 @@ export const PlanService = {
       throw new AppError(httpStatus.NOT_FOUND, "Plan not found");
     }
 
-    if(payload.name){
-         const existingPlanname = await prisma.plan.findFirst({
+    if (payload.name) {
+      const existingPlanName = await prisma.plan.findFirst({
         where: {
           name: payload.name,
           id: { not: id },
         },
       });
-      if(existingPlanname){
-         throw new AppError(
+      if (existingPlanName) {
+        throw new AppError(
           httpStatus.CONFLICT,
-          `Plan with name ${payload.name} already exists`
+          `Plan with name ${payload.name} already exists`,
         );
       }
-     
-
     }
-   
-
-    
 
     const result = await prisma.plan.update({
       where: { id },

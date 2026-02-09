@@ -29,6 +29,7 @@ class App {
           config.FRONTEND_URL,
           "http://localhost:3008",
           "http://localhost:3011",
+          "http://localhost:3017",
           "http://206.162.244.131:3008",
           "http://206.162.244.131:3011",
           "http://206.162.244.131:3017",

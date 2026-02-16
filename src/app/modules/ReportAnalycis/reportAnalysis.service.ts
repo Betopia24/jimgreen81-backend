@@ -16,13 +16,14 @@ const extractReportFile = async (payload: { file: Express.Multer.File }) => {
       contentType: payload.file.mimetype,
     });
 
-    const aiResult = await aiClient.post("/extract", formData, {
+    const aiResult = await aiClient.post("/water/extract", formData, {
       headers: {
         ...formData.getHeaders(),
       },
     });
 
-    return aiResult.data;
+    const result = aiResult.data;
+    return {parameters: result.parameters, validation: result.validation};
   } catch (error) {
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,

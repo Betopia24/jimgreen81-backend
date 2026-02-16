@@ -15,6 +15,12 @@ router.post(
 // Get All By Company Id
 router.get("/company/:companyId", CustomerController.getCustomersByCompanyId);
 
+// Get All By Company Id
+router.get("/company/:companyId", CustomerController.getCustomersByCompanyId);
+
+// Get Customer List By Company Id
+router.get("/company/:companyId/list", CustomerController.getCustomerList);
+
 // Get Single
 router.get("/:id", CustomerController.getCustomerById);
 

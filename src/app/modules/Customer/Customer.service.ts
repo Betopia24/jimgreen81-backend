@@ -33,6 +33,32 @@ const getCustomersByCompanyId = async (companyId: string) => {
   return result;
 };
 
+const getCustomerList = async (companyId: string) => {
+  const result = await prisma.customer.findMany({
+    where: { companyId, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      address: true,
+      location: true,
+      siteName: true,
+      company: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          location: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return result;
+};
+
 const getCustomerById = async (id: string) => {
   const result = await prisma.customer.findUnique({
     where: { id },
@@ -91,6 +117,7 @@ export const CustomerService = {
   createCustomer,
   getCustomerById,
   getCustomersByCompanyId,
+  getCustomerList,
   updateCustomer,
   deleteCustomer,
 };

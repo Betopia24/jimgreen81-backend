@@ -23,6 +23,18 @@ const getCustomersByCompanyId = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
+const getCustomerList = catchAsync(async (req, res) => {
+  const { companyId } = req.params;
+  const result = await CustomerService.getCustomerList(companyId);
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    message: "Customers list retrieved successfully",
+    data: result,
+  });
+});
+
 const getCustomerById = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await CustomerService.getCustomerById(id);
@@ -59,6 +71,7 @@ const deleteCustomer = catchAsync(async (req, res) => {
 export const CustomerController = {
   createCustomer,
   getCustomersByCompanyId,
+  getCustomerList,
   getCustomerById,
   updateCustomer,
   deleteCustomer,

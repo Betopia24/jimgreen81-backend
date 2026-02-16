@@ -49,20 +49,23 @@ const analyzeReport = async (payload: { data: TAnalyzeReportInput }) => {
     throw new AppError(status.NOT_FOUND, "Customer not found with the provided customerId!");
   }
 
-  // return reportParameterArrayToObject(payload.data.parameters);
-  const analyzePayload = {
-    parameters: reportParameterArrayToObject(payload.data.parameters),
-  };
+  const analyzePayload = { parameters: reportParameterArrayToObject(payload.data.parameters), };
 
   try {
-    const aiResult = await aiClient.post("/water/extract", analyzePayload);
+    const aiResult = await aiClient.post("/water/analyze-data", analyzePayload);
 
     const result = aiResult.data;
+
+    const existingReport = await prisma.waterReport.findFirst({
+      where: {
+        report_id: result.report_id,
+      },
+    });
 
     const reportResult = await prisma.report.create({
       data: {
         companyId: customer.companyId,
-        waterReportId: result.id,
+        waterReportId: existingReport?.id,
         customerId: customerId,
       },
          select: {
@@ -106,12 +109,10 @@ const modifyReportGraph = async (payload: { data: TModifyReportGraphInput}) => {
   }
 
   try {
-    const aiResult = await aiClient.post("/water/graph/modify", {
+    await aiClient.post("/water/graph/modify", {
       report_id: report.waterReport.report_id,
       prompt: payload.data.prompt,
     });
-
-    const result = aiResult.data;
 
     const reportResult = await prisma.report.findUnique({
     where: { id: payload.data.reportId },
@@ -124,7 +125,7 @@ const modifyReportGraph = async (payload: { data: TModifyReportGraphInput}) => {
     },
   });
 
-    return {aiResult: result, result: reportResult};
+    return reportResult;
   } catch (error) {
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,
@@ -149,31 +150,22 @@ const recalculateReport = async (payload: { data: TRecalculateReportInput }) => 
     throw new AppError(status.NOT_FOUND, "Report not found!");
   }
 
-  const existingParameters = reportParameterArrayToObject(payload.data.parameters);
-
-  const recalculatePayload = {
-    report_id: report.waterReport.report_id,
-    parameters: existingParameters,
-  };
-
   try {
-    const aiResult = await aiClient.post("/water/graph/recalculate", recalculatePayload);
-
-    const result = aiResult.data;
+    const aiResult = await aiClient.post("/water/recalculate", { report_id: report.waterReport.report_id,
+    adjusted_parameters: payload.data.adjustedParameters,});
 
     const reportResult = await prisma.report.findUnique({
-    where: { id: payload.data.reportId },
-    select: {
-      id: true,
-      companyId:true,
-      createdAt: true,
-      customer: true,
-      waterReport: true,
-    },
-  });
+      where: { id: payload.data.reportId },
+      select: {
+        id: true,
+        companyId:true,
+        createdAt: true,
+        customer: true,
+        waterReport: true,
+        },
+    });
 
-    return {aiResult: result, result: reportResult};
-  // return recalculatePayload;
+    return  reportResult;
   } catch (error) {
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,

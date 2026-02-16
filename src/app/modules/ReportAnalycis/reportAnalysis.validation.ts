@@ -1,12 +1,5 @@
 import z from "zod";
 
-//   const parameterSchemaForObj = z.object({
-//   value: z.number(),
-//   unit: z.string(),
-//   detection_limit: z.number().nullable().optional(),
-// });
-
-
 const parameterSchemaForArray = z.object({ 
   name: z.string(), 
   value: z.number(), 
@@ -27,6 +20,14 @@ export const ReportAnalysisValidationSchema = {
 
   recalculateReport: z.object({
     reportId: z.string({ required_error: "reportId is required" }).nonempty(),
-    parameters:z.array(parameterSchemaForArray),
+    adjustedParameters:z.record(z.number()),
   })
 };
+
+// {
+//   "adjusted_parameters": {
+//     "Calcium": 90,
+//     "Magnesium": 45
+//   },
+//   "report_id": "WQR-2024-001"
+// }

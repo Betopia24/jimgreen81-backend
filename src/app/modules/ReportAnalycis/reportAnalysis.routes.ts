@@ -20,6 +20,13 @@ router.post(
   ReportAnalysisController.analyzeReport,
 );
 
+// Modify Report Graph
+router.post(
+  "/modify-report-graph",
+  validateRequest(ReportAnalysisValidationSchema.modifyReportGraph),
+  ReportAnalysisController.modifyReportGraph,
+);
+
 // Recalculate Report
 router.post(
   "/recalculate-report",

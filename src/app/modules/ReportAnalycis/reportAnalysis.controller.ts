@@ -27,6 +27,18 @@ const analyzeReport = catchAsync(async (req, res) => {
   });
 });
 
+const modifyReportGraph = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.modifyReportGraph({
+    data: req.body,
+  });
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    message: "Report Successfully Modified!",
+    data: result,
+  });
+});
+
 const recalculateReport = catchAsync(async (req, res) => {
   const result = await ReportAnalysisService.recalculateReport({
     data: req.body,
@@ -66,6 +78,7 @@ const getSingleReport = catchAsync(async (req, res) => {
 export const ReportAnalysisController = {
   extractReportFile,
   analyzeReport,
+  modifyReportGraph,
   recalculateReport,
   reportHistory,
   getSingleReport,

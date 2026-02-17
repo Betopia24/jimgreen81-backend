@@ -40,4 +40,32 @@ router.get("/history/:companyId", ReportAnalysisController.reportHistory);
 // Get Single Report
 router.get("/report/:reportId", ReportAnalysisController.getSingleReport);
 
+// Calculate Water Indices
+router.post(
+  "/water/calculate-indices",
+  validateRequest(ReportAnalysisValidationSchema.calculateIndices),
+  ReportAnalysisController.calculateWaterIndices,
+);
+
+// Calculate Cooling Tower
+router.post(
+  "/water/cooling-tower",
+  validateRequest(ReportAnalysisValidationSchema.calculateCoolingTower),
+  ReportAnalysisController.calculateCoolingTower,
+);
+
+// Batch Saturation Analysis
+router.post(
+  "/water/batch-saturation",
+  validateRequest(ReportAnalysisValidationSchema.batchSaturationAnalysis),
+  ReportAnalysisController.batchSaturationAnalysis,
+);
+
+// Predict Corrosion Rate
+router.post(
+  "/water/corrosion-rate",
+  validateRequest(ReportAnalysisValidationSchema.predictCorrosionRate),
+  ReportAnalysisController.predictCorrosionRate,
+);
+
 export const reportAnalysisRoutes = router;

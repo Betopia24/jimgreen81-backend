@@ -1,15 +1,23 @@
 import z from "zod";
+import {
+  batchSaturationAnalysisSchema,
+  calculateCoolingTowerSchema,
+  calculateIndicesSchema,
+  predictCorrosionRateSchema,
+} from "./reportCalculationValidation";
 
-const parameterSchemaForArray = z.object({ 
-  name: z.string(), 
-  value: z.number(), 
-  unit: z.string(), 
-  detection_limit: z.number().nullable(), 
+const parameterSchemaForArray = z.object({
+  name: z.string(),
+  value: z.number(),
+  unit: z.string(),
+  detection_limit: z.number().nullable(),
 });
 
 export const ReportAnalysisValidationSchema = {
   analyzeReport: z.object({
-    customerId: z.string({ required_error: "customerId is required" }).nonempty(),
+    customerId: z
+      .string({ required_error: "customerId is required" })
+      .nonempty(),
     parameters: z.array(parameterSchemaForArray),
   }),
 
@@ -20,14 +28,19 @@ export const ReportAnalysisValidationSchema = {
 
   recalculateReport: z.object({
     reportId: z.string({ required_error: "reportId is required" }).nonempty(),
-    adjustedParameters:z.record(z.number()),
-  })
-};
+    adjustedParameters: z.array(
+      z.object({
+        name: z.string(),
+        value: z.number(),
+      }),
+    ),
+  }),
 
-// {
-//   "adjusted_parameters": {
-//     "Calcium": 90,
-//     "Magnesium": 45
-//   },
-//   "report_id": "WQR-2024-001"
-// }
+  calculateIndices: calculateIndicesSchema,
+
+  calculateCoolingTower: calculateCoolingTowerSchema,
+
+  batchSaturationAnalysis: batchSaturationAnalysisSchema,
+
+  predictCorrosionRate: predictCorrosionRateSchema,
+};

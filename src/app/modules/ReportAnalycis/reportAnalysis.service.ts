@@ -3,8 +3,25 @@ import FormData from "form-data";
 import AppError from "../../../errors/AppError";
 import { aiClient } from "../../../config/aiClient";
 import prisma from "../../../db/prisma";
-import { TAnalyzeReportInput, TModifyReportGraphInput, TRecalculateReportInput } from "./reportAnalysis.interface";
-import { reportParameterArrayToObject, reportParameterObjectToArray } from "./reportAnalysis.utils";
+import {
+  IReportFilterRequest,
+  TAnalyzeReportInput,
+  TBatchSaturationAnalysisInput,
+  TCalculateCoolingTowerInput,
+  TCalculateIndicesInput,
+  TModifyReportGraphInput,
+  TPredictCorrosionRateInput,
+  TRecalculateReportInput,
+} from "./reportAnalysis.interface";
+import {
+  reportParameterArrayToObject,
+  reportParameterObjectToArray,
+} from "./reportAnalysis.utils";
+import {
+  IPaginationOptions,
+  PaginationHelper,
+} from "../../../helpers/pagination";
+import { Prisma } from "@prisma/client";
 
 const extractReportFile = async (payload: { file: Express.Multer.File }) => {
   if (!payload.file) {
@@ -25,7 +42,10 @@ const extractReportFile = async (payload: { file: Express.Multer.File }) => {
     });
 
     const result = aiResult.data;
-    return {parameters: reportParameterObjectToArray(result.parameters), validation: result.validation};
+    return {
+      parameters: reportParameterObjectToArray(result.parameters),
+      validation: result.validation,
+    };
   } catch (error) {
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,
@@ -38,18 +58,22 @@ const extractReportFile = async (payload: { file: Express.Multer.File }) => {
 };
 
 const analyzeReport = async (payload: { data: TAnalyzeReportInput }) => {
-
-  const {customerId } = payload.data;
+  const { customerId } = payload.data;
 
   const customer = await prisma.customer.findUnique({
     where: { id: customerId },
   });
 
-  if(!customer) {
-    throw new AppError(status.NOT_FOUND, "Customer not found with the provided customerId!");
+  if (!customer) {
+    throw new AppError(
+      status.NOT_FOUND,
+      "Customer not found with the provided customerId!",
+    );
   }
 
-  const analyzePayload = { parameters: reportParameterArrayToObject(payload.data.parameters), };
+  const analyzePayload = {
+    parameters: reportParameterArrayToObject(payload.data.parameters),
+  };
 
   try {
     const aiResult = await aiClient.post("/water/analyze-data", analyzePayload);
@@ -68,13 +92,13 @@ const analyzeReport = async (payload: { data: TAnalyzeReportInput }) => {
         waterReportId: existingReport?.id,
         customerId: customerId,
       },
-         select: {
-      id: true,
-      companyId:true,
-      createdAt: true,
-      customer: true,
-      waterReport: true,
-    },
+      select: {
+        id: true,
+        companyId: true,
+        createdAt: true,
+        customer: true,
+        waterReport: true,
+      },
     });
 
     return reportResult;
@@ -89,19 +113,20 @@ const analyzeReport = async (payload: { data: TAnalyzeReportInput }) => {
   }
 };
 
-const modifyReportGraph = async (payload: { data: TModifyReportGraphInput}) => {
-
+const modifyReportGraph = async (payload: {
+  data: TModifyReportGraphInput;
+}) => {
   const report = await prisma.report.findUnique({
     where: { id: payload.data.reportId },
-    select:{
+    select: {
       id: true,
       waterReport: {
         select: {
           id: true,
           report_id: true,
-        }
-      }
-    }
+        },
+      },
+    },
   });
 
   if (!report?.waterReport) {
@@ -115,15 +140,15 @@ const modifyReportGraph = async (payload: { data: TModifyReportGraphInput}) => {
     });
 
     const reportResult = await prisma.report.findUnique({
-    where: { id: payload.data.reportId },
-    select: {
-      id: true,
-      companyId:true,
-      createdAt: true,
-      customer: true,
-      waterReport: true,
-    },
-  });
+      where: { id: payload.data.reportId },
+      select: {
+        id: true,
+        companyId: true,
+        createdAt: true,
+        customer: true,
+        waterReport: true,
+      },
+    });
 
     return reportResult;
   } catch (error) {
@@ -137,13 +162,14 @@ const modifyReportGraph = async (payload: { data: TModifyReportGraphInput}) => {
   }
 };
 
-const recalculateReport = async (payload: { data: TRecalculateReportInput }) => {
-
-  const report = await prisma.report.findUnique({ 
+const recalculateReport = async (payload: {
+  data: TRecalculateReportInput;
+}) => {
+  const report = await prisma.report.findUnique({
     where: { id: payload.data.reportId },
-    include:{
+    include: {
       waterReport: true,
-    }
+    },
   });
 
   if (!report || !report.waterReport) {
@@ -151,21 +177,23 @@ const recalculateReport = async (payload: { data: TRecalculateReportInput }) => 
   }
 
   try {
-    const aiResult = await aiClient.post("/water/recalculate", { report_id: report.waterReport.report_id,
-    adjusted_parameters: payload.data.adjustedParameters,});
+    const aiResult = await aiClient.post("/water/recalculate", {
+      report_id: report.waterReport.report_id,
+      adjusted_parameters: payload.data.adjustedParameters,
+    });
 
     const reportResult = await prisma.report.findUnique({
       where: { id: payload.data.reportId },
       select: {
         id: true,
-        companyId:true,
+        companyId: true,
         createdAt: true,
         customer: true,
         waterReport: true,
-        },
+      },
     });
 
-    return  reportResult;
+    return reportResult;
   } catch (error) {
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,
@@ -177,20 +205,70 @@ const recalculateReport = async (payload: { data: TRecalculateReportInput }) => 
   }
 };
 
-const reportHistory = async (payload: { companyId: string }) => {
+const reportHistory = async (payload: {
+  companyId: string;
+  filters: IReportFilterRequest;
+  options: IPaginationOptions;
+}) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    PaginationHelper.calculatePagination(payload.options);
+  const { searchTerm } = payload.filters;
+
+  const andConditions: Prisma.ReportWhereInput[] = [
+    { companyId: payload.companyId },
+  ];
+
+  if (searchTerm) {
+    andConditions.push({
+      OR: [
+        {
+          customer: {
+            is: {
+              name: {
+                contains: searchTerm,
+                mode: "insensitive",
+              },
+            },
+          },
+        },
+        {
+          waterReport: {
+            is: {
+              report_id: {
+                contains: searchTerm,
+                mode: "insensitive",
+              },
+            },
+          },
+        },
+      ],
+    });
+  }
+
+  const whereConditions: Prisma.ReportWhereInput = { AND: andConditions };
 
   const reports = await prisma.report.findMany({
-    where: { companyId: payload.companyId },
+    where: whereConditions,
+    skip,
+    take: limit,
+    orderBy:
+      sortBy && sortOrder
+        ? {
+            [sortBy]: sortOrder,
+          }
+        : {
+            createdAt: "desc",
+          },
     select: {
       id: true,
-      companyId:true,
+      companyId: true,
       createdAt: true,
       customer: true,
       waterReport: true,
     },
   });
 
-  const formattedReports = reports.map(report => ({
+  const formattedReports = reports.map((report) => ({
     id: report.id,
     report_id: report.waterReport?.report_id,
     customerName: report.customer.name,
@@ -198,7 +276,19 @@ const reportHistory = async (payload: { companyId: string }) => {
     createdAt: report.createdAt,
   }));
 
-  return formattedReports;
+  const total = await prisma.report.count({
+    where: whereConditions,
+  });
+
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+    data: formattedReports,
+  };
 };
 
 const getSingleReport = async (payload: { reportId: string }) => {
@@ -208,7 +298,7 @@ const getSingleReport = async (payload: { reportId: string }) => {
     },
     select: {
       id: true,
-      companyId:true,
+      companyId: true,
       createdAt: true,
       customer: true,
       waterReport: true,
@@ -218,6 +308,53 @@ const getSingleReport = async (payload: { reportId: string }) => {
   return report;
 };
 
+// New Apis
+// /api/v1/water/calculate-indices Calculate Water Indices
+// /api/v1/water/cooling-tower Calculate Cooling Tower
+// /api/v1/water/batch-saturation Batch Saturation Analysis
+// /api/v1/water/corrosion-rate Predict Corrosion Rate
+
+const calculateWaterIndices = async (payload: {
+  data: TCalculateIndicesInput;
+}) => {
+  return payload.data;
+};
+
+const calculateCoolingTower = async (payload: {
+  data: TCalculateCoolingTowerInput;
+}) => {
+  return payload.data;
+};
+
+const batchSaturationAnalysis = async (payload: {
+  data: TBatchSaturationAnalysisInput;
+}) => {
+  const {
+    ph_range_min,
+    ph_range_max,
+    coc_range_min,
+    coc_range_max,
+    temp_range_min,
+    temp_range_max,
+    ...rest
+  } = payload.data;
+
+  const transformedData = {
+    ...rest,
+    ph_range: [ph_range_min, ph_range_max],
+    coc_range: [coc_range_min, coc_range_max],
+    temp_range: [temp_range_min, temp_range_max],
+  };
+
+  return transformedData;
+};
+
+const predictCorrosionRate = async (payload: {
+  data: TPredictCorrosionRateInput;
+}) => {
+  return payload.data;
+};
+
 export const ReportAnalysisService = {
   extractReportFile,
   analyzeReport,
@@ -225,4 +362,8 @@ export const ReportAnalysisService = {
   recalculateReport,
   reportHistory,
   getSingleReport,
+  calculateWaterIndices,
+  calculateCoolingTower,
+  batchSaturationAnalysis,
+  predictCorrosionRate,
 };

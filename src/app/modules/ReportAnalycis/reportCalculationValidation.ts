@@ -153,7 +153,6 @@ export const predictCorrosionRateSchema = z
     saturation_indices: SaturationIndicesSchema.optional(),
     do_ppm: z.number().optional(),
     temp_c: z.number().optional(),
-    pH: z.number().optional(), // for copper Option B
   })
   .refine(
     (data) =>

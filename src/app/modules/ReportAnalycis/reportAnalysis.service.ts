@@ -308,22 +308,60 @@ const getSingleReport = async (payload: { reportId: string }) => {
   return report;
 };
 
-// New Apis
-// /api/v1/water/calculate-indices Calculate Water Indices
-// /api/v1/water/cooling-tower Calculate Cooling Tower
-// /api/v1/water/batch-saturation Batch Saturation Analysis
-// /api/v1/water/corrosion-rate Predict Corrosion Rate
-
 const calculateWaterIndices = async (payload: {
   data: TCalculateIndicesInput;
 }) => {
-  return payload.data;
+  const { report_id, ...data } = payload.data;
+
+  if (report_id) {
+    const report = await prisma.waterReport.findFirst({
+      where: { report_id: report_id },
+    });
+
+    if (!report) {
+      throw new AppError(status.NOT_FOUND, "Report not found!");
+    }
+  }
+
+  // return payload.data;
+
+  const aiPath = report_id
+    ? `/water/calculate-indices?report_id=${report_id}`
+    : "/water/calculate-indices";
+
+  try {
+    const aiResult = await aiClient.post(aiPath, data);
+
+    return aiResult.data.indices;
+  } catch (error) {
+    throw new AppError(
+      status.INTERNAL_SERVER_ERROR,
+      "Failed to calculate water indices!\n" +
+        " " +
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (error as any).response?.data.detail || (error as any).message,
+    );
+  }
 };
 
 const calculateCoolingTower = async (payload: {
   data: TCalculateCoolingTowerInput;
 }) => {
-  return payload.data;
+  // return payload.data;
+
+  try {
+    const aiResult = await aiClient.post("/water/cooling-tower", payload.data);
+
+    return aiResult.data.cooling_tower_analysis;
+  } catch (error) {
+    throw new AppError(
+      status.INTERNAL_SERVER_ERROR,
+      "Failed to calculate cooling tower!\n" +
+        " " +
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (error as any).response?.data.detail || (error as any).message,
+    );
+  }
 };
 
 const batchSaturationAnalysis = async (payload: {
@@ -346,13 +384,70 @@ const batchSaturationAnalysis = async (payload: {
     temp_range: [temp_range_min, temp_range_max],
   };
 
-  return transformedData;
+  if (payload.data.report_id) {
+    const report = await prisma.waterReport.findFirst({
+      where: { report_id: payload.data.report_id },
+    });
+
+    if (!report) {
+      throw new AppError(status.NOT_FOUND, "Report not found!");
+    }
+  }
+
+  // return transformedData;
+
+  try {
+    const aiResult = await aiClient.post(
+      "/water/batch-saturation",
+      transformedData,
+    );
+
+    return aiResult.data;
+  } catch (error) {
+    throw new AppError(
+      status.INTERNAL_SERVER_ERROR,
+      "Failed to batch saturation analysis!\n" +
+        " " +
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (error as any).response?.data.detail || (error as any).message,
+    );
+  }
 };
 
 const predictCorrosionRate = async (payload: {
   data: TPredictCorrosionRateInput;
 }) => {
-  return payload.data;
+  const { report_id, ...data } = payload.data;
+
+  if (report_id) {
+    const report = await prisma.waterReport.findFirst({
+      where: { report_id: report_id },
+    });
+
+    if (!report) {
+      throw new AppError(status.NOT_FOUND, "Report not found!");
+    }
+  }
+
+  // return payload.data;
+
+  const aiPath = report_id
+    ? `/water/corrosion-rate?report_id=${report_id}`
+    : "/water/corrosion-rate";
+
+  try {
+    const aiResult = await aiClient.post(aiPath, data);
+
+    return aiResult.data;
+  } catch (error) {
+    throw new AppError(
+      status.INTERNAL_SERVER_ERROR,
+      "Failed to predict corrosion rate!\n" +
+        " " +
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (error as any).response?.data.detail || (error as any).message,
+    );
+  }
 };
 
 export const ReportAnalysisService = {

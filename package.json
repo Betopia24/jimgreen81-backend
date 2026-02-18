@@ -60,6 +60,7 @@
     "jwk-to-pem": "^2.0.7",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
+    "node-cron": "^4.2.1",
     "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.3",
     "prisma": "^6.8.2",

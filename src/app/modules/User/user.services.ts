@@ -39,7 +39,22 @@ export const UserService = {
 
     if (!userInfo) throw new AppError(httpStatus.NOT_FOUND, "User not Found!");
 
-    return userInfo;
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: {
+        companyId: userInfo.companyMember?.companyId,
+        status: "ACTIVE",
+      },
+      select: {
+        id: true,
+        status: true,
+        startDate: true,
+        endDate: true,
+        canceledAt: true,
+        planSnapshot: true,
+      },
+    });
+
+    return { ...userInfo, activeSubscription };
   },
 
   // Update own profile

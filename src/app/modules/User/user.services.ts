@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { IUserFilterRequest, TUpdateProfile } from "./user.interface";
 import {
   IPaginationOptions,
@@ -12,6 +13,7 @@ import {
   deleteFileFromCloud,
   uploadFileToCloud,
 } from "../../../upload/fileUpload";
+import e from "express";
 
 export const UserService = {
   // get user profile
@@ -39,20 +41,9 @@ export const UserService = {
 
     if (!userInfo) throw new AppError(httpStatus.NOT_FOUND, "User not Found!");
 
-    const activeSubscription = await prisma.subscription.findFirst({
-      where: {
-        companyId: userInfo.companyMember?.companyId,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-        status: true,
-        startDate: true,
-        endDate: true,
-        canceledAt: true,
-        planSnapshot: true,
-      },
-    });
+    const activeSubscription = await activeSubscriptionInformation(
+      userInfo.companyMember?.companyId,
+    );
 
     return { ...userInfo, activeSubscription };
   },
@@ -116,7 +107,7 @@ export const UserService = {
 
     const oldPictureUrl = userInfo.avatar;
 
-    let imageUrl = (await uploadFileToCloud(file, "file")).url;
+    let imageUrl = (await uploadFileToCloud(file, "file", "profile")).url;
 
     const result = await prisma.user.update({
       where: { id: userInfo.id },
@@ -342,4 +333,49 @@ export const UserService = {
 
     return result;
   },
+};
+
+export const activeSubscriptionInformation = async (companyId?: string) => {
+  const activeSubscription = await prisma.subscription.findFirst({
+    where: {
+      companyId: companyId,
+      status: "ACTIVE",
+    },
+    select: {
+      id: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      canceledAt: true,
+      planSnapshot: true,
+    },
+  });
+
+  if (!activeSubscription) return null;
+
+  const totalReports = await prisma.report.count({
+    where: {
+      companyId: companyId,
+    },
+  });
+
+  const totalMembers = await prisma.companyMember.count({
+    where: {
+      companyId: companyId,
+    },
+  });
+
+  const result = {
+    ...activeSubscription,
+    remainingReportGeneration:
+      totalReports >= (activeSubscription.planSnapshot as any).maxReports
+        ? 0
+        : (activeSubscription.planSnapshot as any).maxReports - totalReports,
+    remainingAccountAddition:
+      totalMembers >= (activeSubscription.planSnapshot as any).maxAccounts
+        ? 0
+        : (activeSubscription.planSnapshot as any).maxAccounts - totalMembers,
+  };
+
+  return result;
 };

@@ -19,6 +19,7 @@ import {
 import { PasswordHelper } from "../../../helpers/password";
 import JwtHelper from "../../../helpers/jwtHelpers";
 import { recentActivityLog } from "../../../helpers/recentActivity";
+import { activeSubscriptionInformation } from "../User/user.services";
 
 export class AuthService {
   // Create Account
@@ -202,7 +203,11 @@ export class AuthService {
 
     const tokens = this.getLoginTokens({ id: user.id, role: user.role });
 
-    return { ...tokens, user: restUserResult };
+    const activeSubscription = await activeSubscriptionInformation(
+      restUserResult.companyMember?.companyId,
+    );
+
+    return { ...tokens, user: { ...restUserResult, activeSubscription } };
   };
 
   // Social Login

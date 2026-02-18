@@ -268,6 +268,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       ? companyMember.user.firstName + companyMember.user.firstName
       : "Company Member",
     performerImage: companyMember?.user.avatar,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     message: `Upgraded to ${(result.planSnapshot as any).name}`,
     details: result,
   });

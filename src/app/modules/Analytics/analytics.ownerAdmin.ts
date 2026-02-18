@@ -171,7 +171,7 @@ export async function getReportTrend(companyId: string, year: number) {
   return data;
 }
 
-export async function getRecentReports(companyId: string, limit = 8) {
+export async function getRecentReports(companyId: string, limit = 6) {
   const reports = await prisma.report.findMany({
     where: {
       companyId,

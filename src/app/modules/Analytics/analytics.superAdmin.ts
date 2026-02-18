@@ -12,7 +12,7 @@ export const getSuperAdminDashboardOverview = async () => {
   const recentActivities = await prisma.recentActivity.findMany({
     where: { activityFor: "SUPER_ADMIN" },
     orderBy: { createdAt: "desc" },
-    take: 20,
+    take: 6,
   });
 
   const result = {

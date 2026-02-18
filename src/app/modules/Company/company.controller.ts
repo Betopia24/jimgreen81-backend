@@ -77,8 +77,7 @@ export const CompanyController = {
 
   // Get Company List
   getCompanyList: catchAsync(async (req, res) => {
-    console.log("list of company");
-
+    // TODO: Need to implement pagination and search functionality in this controller
     const result = await CompanyService.getCompanyList();
 
     sendResponse(res, {

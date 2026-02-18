@@ -33,10 +33,14 @@ export const needCompanySubscription = (
         );
       }
 
+      let subscriptionPlan;
+      if (typeof activeSubscription.planSnapshot === "string") {
+        subscriptionPlan = JSON.parse(activeSubscription.planSnapshot);
+      } else {
+        subscriptionPlan = activeSubscription.planSnapshot;
+      }
+
       if (type === "ADD_MEMBER") {
-        const subscriptionPlan = JSON.parse(
-          activeSubscription.planSnapshot as string,
-        );
         const currentMemberCount = await prisma.companyMember.count({
           where: { companyId: getMemberInfo.companyId },
         });
@@ -50,10 +54,6 @@ export const needCompanySubscription = (
       }
 
       if (type === "REPORT_GENERATE") {
-        const subscriptionPlan = JSON.parse(
-          activeSubscription.planSnapshot as string,
-        );
-
         const currentReportCount = await prisma.report.count({
           where: { companyId: getMemberInfo.companyId },
         });

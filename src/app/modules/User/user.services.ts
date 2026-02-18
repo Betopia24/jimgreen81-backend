@@ -13,7 +13,6 @@ import {
   deleteFileFromCloud,
   uploadFileToCloud,
 } from "../../../upload/fileUpload";
-import e from "express";
 
 export const UserService = {
   // get user profile

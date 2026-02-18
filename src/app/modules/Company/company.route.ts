@@ -71,7 +71,7 @@ router.delete(
   CompanyController.deleteMember,
 );
 
-// Delete Company
+// Update Company Status
 router.patch(
   "/:id/status",
   auth("ADMIN"),

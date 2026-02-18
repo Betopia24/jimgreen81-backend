@@ -5,7 +5,7 @@ import { percentageChange } from "./analytics.utils";
 export const getSuperAdminDashboardOverview = async () => {
   const stats = await getSuperAdminDashboardStats();
 
-  const subscriptionGrowth = getYearlySubscriptionGrowth(
+  const subscriptionGrowth = await getYearlySubscriptionGrowth(
     new Date().getFullYear(),
   );
 

@@ -1,6 +1,7 @@
 import { createServer, Server } from "http";
 import app from "./app";
 import logger from "./utils/logger";
+import { startNotificationCrons } from "./Cron";
 
 class AppServer {
   private port: number | string;
@@ -17,6 +18,7 @@ class AppServer {
     this.server = app.listen(this.port, () => {
       logger.info(`SERVER IS RUNNING ON PORT ${this.port}`);
     });
+    startNotificationCrons();
   }
 
   private handleProcessEvents(): void {

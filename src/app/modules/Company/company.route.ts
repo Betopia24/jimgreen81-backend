@@ -4,6 +4,7 @@ import { CompanyValidationSchema } from "./company.validation";
 import { CompanyController } from "./company.controller";
 import validateRequest from "../../middlewares/validateRequest";
 import { companyAccess } from "../../middlewares/companyAccess";
+import { needCompanySubscription } from "../../middlewares/needCompanySubscription";
 
 const router = express.Router();
 
@@ -32,6 +33,7 @@ router.post(
   "/:id/members",
   auth(),
   companyAccess("owner"),
+  needCompanySubscription("ADD_MEMBER"),
   validateRequest(CompanyValidationSchema.addNewMember),
   CompanyController.addNewMember,
 );

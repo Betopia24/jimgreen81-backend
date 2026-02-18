@@ -285,6 +285,7 @@ enum SubscriptionStatus {
   ACTIVE
   INCOMPLETE
   CANCELED
+  EXPIRED
 }
 
 model Subscription {

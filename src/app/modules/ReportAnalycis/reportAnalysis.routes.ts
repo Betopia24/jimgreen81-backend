@@ -3,12 +3,15 @@ import { uploadFile } from "../../../upload/fileUpload";
 import { ReportAnalysisController } from "./reportAnalysis.controller";
 import { ReportAnalysisValidationSchema } from "./reportAnalysis.validation";
 import validateRequest from "../../middlewares/validateRequest";
+import { auth } from "../../middlewares/auth";
+import { needCompanySubscription } from "../../middlewares/needCompanySubscription";
 
 const router = Router();
 
 // Extract Report
 router.post(
   "/extract-report",
+  auth(),
   uploadFile.single("file"),
   ReportAnalysisController.extractReportFile,
 );
@@ -16,6 +19,8 @@ router.post(
 // Analyze Report
 router.post(
   "/analyze-report",
+  auth(),
+  needCompanySubscription("REPORT_GENERATE"),
   validateRequest(ReportAnalysisValidationSchema.analyzeReport),
   ReportAnalysisController.analyzeReport,
 );
@@ -23,6 +28,8 @@ router.post(
 // Modify Report Graph
 router.post(
   "/modify-report-graph",
+  auth(),
+  needCompanySubscription("REPORT_GENERATE"),
   validateRequest(ReportAnalysisValidationSchema.modifyReportGraph),
   ReportAnalysisController.modifyReportGraph,
 );
@@ -30,6 +37,7 @@ router.post(
 // Recalculate Report
 router.post(
   "/recalculate-report",
+  auth(),
   validateRequest(ReportAnalysisValidationSchema.recalculateReport),
   ReportAnalysisController.recalculateReport,
 );
@@ -43,6 +51,7 @@ router.get("/report/:reportId", ReportAnalysisController.getSingleReport);
 // Calculate Water Indices
 router.post(
   "/water/calculate-indices",
+  auth(),
   validateRequest(ReportAnalysisValidationSchema.calculateIndices),
   ReportAnalysisController.calculateWaterIndices,
 );
@@ -50,6 +59,7 @@ router.post(
 // Calculate Cooling Tower
 router.post(
   "/water/cooling-tower",
+  auth(),
   validateRequest(ReportAnalysisValidationSchema.calculateCoolingTower),
   ReportAnalysisController.calculateCoolingTower,
 );
@@ -57,6 +67,7 @@ router.post(
 // Batch Saturation Analysis
 router.post(
   "/water/batch-saturation",
+  auth(),
   validateRequest(ReportAnalysisValidationSchema.batchSaturationAnalysis),
   ReportAnalysisController.batchSaturationAnalysis,
 );
@@ -64,6 +75,7 @@ router.post(
 // Predict Corrosion Rate
 router.post(
   "/water/corrosion-rate",
+  auth(),
   validateRequest(ReportAnalysisValidationSchema.predictCorrosionRate),
   ReportAnalysisController.predictCorrosionRate,
 );

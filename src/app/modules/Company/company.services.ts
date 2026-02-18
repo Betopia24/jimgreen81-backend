@@ -257,6 +257,17 @@ export const CompanyService = {
 
     const companyInfo = await prisma.company.findUnique({
       where: { id: companyId },
+      include: {
+        subscriptions: true,
+        _count: {
+          select: {
+            companyMembers: true,
+            rawMaterials: true,
+            products: true,
+            customers: true,
+          },
+        },
+      },
     });
 
     if (!companyInfo) {

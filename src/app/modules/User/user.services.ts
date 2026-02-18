@@ -324,10 +324,18 @@ export const UserService = {
       );
     }
 
-    const result = await prisma.user.delete({
-      where: {
-        id: userInfo.id,
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      // delete member list first
+      await tx.companyMember.delete({
+        where: { id: userInfo.id },
+      });
+
+      // then delete user
+      const result = await tx.user.delete({
+        where: { id: userInfo.id },
+      });
+
+      return result;
     });
 
     return result;

@@ -4,7 +4,9 @@ import {
   DeleteObjectsCommand,
   PutObjectCommand,
   S3Client,
+  GetObjectCommand,
 } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import fs from "fs";
 import { Readable } from "stream";
 import AppError from "../errors/AppError";
@@ -16,99 +18,148 @@ interface UploadResponse {
   url: string;
 }
 
-// Define the expected file object structure
 interface FileObject {
   originalname: string;
-  path?: string; // Making path optional since it might not exist
-  buffer?: Buffer; // Adding buffer for when path isn't available
+  path?: string;
+  buffer?: Buffer;
   mimetype: string;
 }
 
-// AWS S3 client
+// ===============================
+// S3 CLIENT CONFIG
+// ===============================
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION,
+  region: config.aws.AWS_REGION,
   credentials: {
     accessKeyId: config.aws.AWS_ACCESS_KEY,
     secretAccessKey: config.aws.AWS_SECRET_KEY,
   },
 });
 
-// Upload file (general)
-const uploadSingleToAWS = async (file: FileObject): Promise<UploadResponse> => {
+// ===============================
+// HELPER: Generate pre-signed URL
+// ===============================
+const generatePresignedUrl = async (
+  key: string,
+  expiresInSeconds = 604800, // max 7 days
+) => {
+  const command = new GetObjectCommand({
+    Bucket: config.aws.AWS_S3_BUCKET_NAME,
+    Key: key,
+  });
+
+  return await getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
+};
+
+// ===============================
+// HELPER: Extract Key from URL
+// ===============================
+const extractKeyFromUrl = (url: string) => {
+  const baseUrl = `https://${config.aws.AWS_S3_BUCKET_NAME}.s3.${config.aws.AWS_REGION}.amazonaws.com/`;
+  if (!url.startsWith(baseUrl)) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Invalid S3 URL");
+  }
+  return url.replace(baseUrl, "");
+};
+
+// ===============================
+// UPLOAD SINGLE FILE
+// ===============================
+const uploadSingleToAWS = async (
+  file: FileObject,
+  folderName = "general",
+): Promise<UploadResponse> => {
   try {
+    if (!file) {
+      throw new AppError(httpStatus.BAD_REQUEST, "File is required");
+    }
+
     let fileBody: Buffer | Readable;
 
     if (file.path) {
-      try {
-        await fs.promises.access(file.path, fs.constants.F_OK);
-        fileBody = fs.createReadStream(file.path);
-      } catch (err) {
-        console.error(`File path doesn't exist: ${file.path}`);
-        throw new Error(`File not found at path: ${file.path}`);
-      }
+      await fs.promises.access(file.path, fs.constants.F_OK);
+      fileBody = fs.createReadStream(file.path);
     } else if (file.buffer) {
       fileBody = file.buffer;
     } else {
-      throw new Error("Neither file path nor buffer is available");
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "Neither file path nor buffer is available",
+      );
     }
 
-    const fileKey = `${uuid()}-${file.originalname}`;
+    const safeFileName = file.originalname.replace(/\s+/g, "-");
+    const fileKey = `${folderName}/${uuid()}-${safeFileName}`;
 
     const command = new PutObjectCommand({
       Bucket: config.aws.AWS_S3_BUCKET_NAME,
       Key: fileKey,
       Body: fileBody,
-      // ACL: "public-read",
       ContentType: file.mimetype,
+      // ACL removed for ACL-free bucket
     });
 
     await s3Client.send(command);
 
-    const Location = `https://${config.aws.AWS_S3_BUCKET_NAME}.s3.${config.aws.AWS_REGION}.amazonaws.com/${fileKey}`;
-    return { url: Location };
-  } catch (error) {
-    console.error(`Error uploading file: ${file.originalname}`, error);
-    throw error;
+    // Generate pre-signed URL for user access
+    const presignedUrl = await generatePresignedUrl(fileKey);
+
+    return { url: presignedUrl };
+  } catch (error: any) {
+    console.error("S3 Upload Error:", error);
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      error?.message || "Failed to upload file",
+    );
   }
 };
 
-// Upload PDF buffer
+// ===============================
+// UPLOAD PDF BUFFER
+// ===============================
 const uploadPDFBufferToAWS = async (
   pdfBuffer: Uint8Array,
   fileName: string,
+  folderName = "pdf",
 ): Promise<UploadResponse> => {
   try {
     if (!pdfBuffer || pdfBuffer.length === 0) {
-      throw new AppError(400, "PDF buffer is empty");
+      throw new AppError(httpStatus.BAD_REQUEST, "PDF buffer is empty");
     }
 
-    const key = `${uuid()}-${fileName}.pdf`;
+    const safeFileName = fileName.replace(/\s+/g, "-");
+    const fileKey = `${folderName}/${uuid()}-${safeFileName}.pdf`;
 
     const command = new PutObjectCommand({
       Bucket: config.aws.AWS_S3_BUCKET_NAME,
-      Key: key,
+      Key: fileKey,
       Body: pdfBuffer,
-      // ACL: "public-read",
       ContentType: "application/pdf",
     });
 
     await s3Client.send(command);
 
-    const Location = `https://${config.aws.AWS_S3_BUCKET_NAME}.s3.${config.aws.AWS_REGION}.amazonaws.com/${key}`;
-    return { url: Location };
-  } catch (error) {
-    console.error("Error uploading PDF:", error);
-    throw new AppError(500, "Failed to upload PDF");
+    const presignedUrl = await generatePresignedUrl(fileKey);
+    return { url: presignedUrl };
+  } catch (error: any) {
+    console.error("PDF Upload Error:", error);
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      error?.message || "Failed to upload PDF",
+    );
   }
 };
 
-// Delete single file
+// ===============================
+// DELETE SINGLE FILE (from pre-signed URL or direct URL)
+// ===============================
 const deleteSingleFromAWS = async (fileUrl: string): Promise<void> => {
   try {
-    const key = fileUrl.replace(
-      `https://${config.aws.AWS_S3_BUCKET_NAME}.s3.${config.aws.AWS_REGION}.amazonaws.com/`,
-      "",
-    );
+    if (!fileUrl) {
+      throw new AppError(httpStatus.BAD_REQUEST, "File URL is required");
+    }
+
+    const key = extractKeyFromUrl(fileUrl);
 
     const command = new DeleteObjectCommand({
       Bucket: config.aws.AWS_S3_BUCKET_NAME,
@@ -116,48 +167,50 @@ const deleteSingleFromAWS = async (fileUrl: string): Promise<void> => {
     });
 
     await s3Client.send(command);
-
-    console.log(`Successfully deleted file: ${fileUrl}`);
   } catch (error: any) {
-    console.error(`Error deleting file: ${fileUrl}`, error);
-    throw new Error(`Failed to delete file: ${error?.message}`);
+    console.error("S3 Delete Error:", error);
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      error?.message || "Failed to delete file",
+    );
   }
 };
 
-// Delete multiple files
+// ===============================
+// DELETE MULTIPLE FILES
+// ===============================
 const deleteMultipleFromAWS = async (fileUrls: string[]): Promise<void> => {
   try {
     if (!Array.isArray(fileUrls) || fileUrls.length === 0) {
       throw new AppError(httpStatus.BAD_REQUEST, "No file URLs provided");
     }
 
-    const objectKeys = fileUrls.map((fileUrl) =>
-      fileUrl.replace(
-        `https://${config.aws.AWS_S3_BUCKET_NAME}.s3.${config.aws.AWS_REGION}.amazonaws.com/`,
-        "",
-      ),
-    );
+    const objectKeys = fileUrls.map((url) => ({
+      Key: extractKeyFromUrl(url),
+    }));
 
     const command = new DeleteObjectsCommand({
-      Bucket: config.aws.AWS_S3_BUCKET_NAME!,
-      Delete: {
-        Objects: objectKeys.map((Key) => ({ Key })),
-      },
+      Bucket: config.aws.AWS_S3_BUCKET_NAME,
+      Delete: { Objects: objectKeys },
     });
 
     await s3Client.send(command);
   } catch (error: any) {
-    console.error(`Error deleting files:`, error);
+    console.error("S3 Multiple Delete Error:", error);
     throw new AppError(
       httpStatus.INTERNAL_SERVER_ERROR,
-      `Failed to delete files: ${error?.message}`,
+      error?.message || "Failed to delete files",
     );
   }
 };
 
+// ===============================
+// EXPORT
+// ===============================
 export const UploadToAwsHelper = {
   uploadSingleToAWS,
   uploadPDFBufferToAWS,
   deleteSingleFromAWS,
   deleteMultipleFromAWS,
+  generatePresignedUrl,
 };

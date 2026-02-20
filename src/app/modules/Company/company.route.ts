@@ -12,12 +12,7 @@ const router = express.Router();
 router.get("/list", auth(), CompanyController.getCompanyList);
 
 // Get Company Info
-router.get(
-  "/:id",
-  auth(),
-  companyAccess("owner", "member"),
-  CompanyController.getCompanyInfo,
-);
+router.get("/:id", auth(), CompanyController.getCompanyInfo);
 
 // Update Company Info
 router.put(

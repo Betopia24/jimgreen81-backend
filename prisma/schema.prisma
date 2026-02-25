@@ -118,18 +118,21 @@ model CompanyMember {
 
 // ======================== Raw Material ======================
 model RawMaterial {
-  id                    String       @id @default(auto()) @map("_id") @db.ObjectId
-  chemicalName          String
-  chemicalType          String // Corrosion Inhibitor, Biocide,Scale Inhibitor,  Dispersant, Other 
-  supplierName          String
-  dosageRate            String // ppm, mg/L
-  dosageType            String // ppm, mg/L
-  feedFrequency         String // Daily, weekly
-  safetyClassification  String // Hazardous, Non-hazardous
-  instructions          String
-  isActive              Boolean      @default(true)
-  companyId             String       @db.ObjectId
-
+  id                              String       @id @default(auto()) @map("_id") @db.ObjectId
+  commonName                      String
+  manufacturer                    String
+  manufacturerProductName         String
+  activeComponentName             String
+  activePercentage                Int
+  activePercentageChemicalFormula String
+  estimatedCost                   Int
+  saltToInhibit                   String
+  formulaForInhibitionPerformance String
+  bandUpperCushion                String
+  bandLowerCushion                String
+  communityVisibility             String
+  isActive                        Boolean      @default(true)
+  companyId                       String       @db.ObjectId
   company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
  
   createdAt             DateTime     @default(now())
@@ -141,19 +144,13 @@ model RawMaterial {
 // =========================== Product ========================
 model Product {
   id                        String      @id @default(auto()) @map("_id") @db.ObjectId
-  name                      String
-  manufacturer              String
-  productCategory           String // Corrosion Inhibitor, Biocide,Scale Inhibitor,  Dispersant, Other
-  intendedUse               String // Cooling, Boiler, Process Water
-  operatingPhRangeMin       Int
-  operatingPhRangeMax       Int
-  temperatureTolerance      String 
-  maximumHardnessAllowed    String // e.g Treatment Chemical, Testing Reagent, Cleaning Agent, Additive
-  compatibilityNote         String
-  costPerUnit               Int 
-  averageMonthlyConsumption String // L, kg, gal
-  consumptionType           String
-  replacementFrequency      String // e.g monthly, quarterly, semi-annually, annually
+  productName               String
+  manufacturerName          String
+  rawMaterials              Json
+  calculatedProductCost     String
+  productPrice              String
+  communityVisibility       String
+  
   isActive                  Boolean      @default(true)
   companyId                 String       @db.ObjectId
 

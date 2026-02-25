@@ -1,46 +1,35 @@
 import { z } from "zod";
 
 const createRawMaterialSchema = z.object({
-  chemicalName: z.string().min(1, "Chemical name is required"),
-  chemicalType: z.enum(
-    [
-      "Corrosion Inhibitor",
-      "Biocide",
-      "Scale Inhibitor",
-      "Dispersant",
-      "Other",
-    ],
-    {
-      errorMap: () => ({ message: "Invalid chemical type" }),
-    },
-  ),
-  supplierName: z.string().min(1, "Supplier name is required"),
-  dosageRate: z.string().min(1, "Dosage rate is required"),
-  dosageType: z.enum(["ppm", "mg/L"]),
-  feedFrequency: z.string().min(1, "Feed frequency is required"),
-  safetyClassification: z.string().min(1, "safetyClassification is required"),
-  instructions: z.string().min(1, "Instructions are required"),
-  isActive: z.boolean().optional(),
   companyId: z.string().min(1, "Company ID is required"),
+  commonName: z.string(),
+  manufacturer: z.string(),
+  manufacturerProductName: z.string(),
+  activeComponentName: z.string(),
+  activePercentage: z.number(),
+  activePercentageChemicalFormula: z.string(),
+  estimatedCost: z.number(),
+  saltToInhibit: z.string(),
+  formulaForInhibitionPerformance: z.string(),
+  bandUpperCushion: z.string(),
+  bandLowerCushion: z.string(),
+  communityVisibility: z.string(),
+  isActive: z.boolean().optional(),
 });
 
 const updateRawMaterialSchema = z.object({
-  chemicalName: z.string().min(1).optional(),
-  chemicalType: z
-    .enum([
-      "Corrosion Inhibitor",
-      "Biocide",
-      "Scale Inhibitor",
-      "Dispersant",
-      "Other",
-    ])
-    .optional(),
-  supplierName: z.string().min(1).optional(),
-  dosageRate: z.string().min(1).optional(),
-  dosageType: z.enum(["ppm", "mg/L"]).optional(),
-  feedFrequency: z.string().min(1).optional(),
-  safetyClassification: z.string().optional(),
-  instructions: z.string().min(1).optional(),
+  commonName: z.string().optional(),
+  manufacturer: z.string().optional(),
+  manufacturerProductName: z.string().optional(),
+  activeComponentName: z.string().optional(),
+  activePercentage: z.number().optional(),
+  activePercentageChemicalFormula: z.string().optional(),
+  estimatedCost: z.number().optional(),
+  saltToInhibit: z.string().optional(),
+  formulaForInhibitionPerformance: z.string().optional(),
+  bandUpperCushion: z.string().optional(),
+  bandLowerCushion: z.string().optional(),
+  communityVisibility: z.string().optional(),
   isActive: z.boolean().optional(),
 });
 

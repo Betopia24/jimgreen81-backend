@@ -6,5 +6,5 @@ export type TCreateProductInput = z.infer<
 >;
 
 export type TUpdateProductInput = z.infer<
-  typeof ProductValidation.createProductSchema
+  typeof ProductValidation.updateProductSchema
 >;

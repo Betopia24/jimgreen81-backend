@@ -143,21 +143,29 @@ model RawMaterial {
 
 // =========================== Product ========================
 model Product {
-  id                        String      @id @default(auto()) @map("_id") @db.ObjectId
+  id                        String   @id @default(auto()) @map("_id") @db.ObjectId
+
   productName               String
   manufacturerName          String
-  rawMaterials              Json
-  calculatedProductCost     String
-  productPrice              String
+
+  rawMaterials              Json     // array of raw materials with snapshot
+
+  waterPercentage           Float    @default(0)
+
+  calculatedProductCost     Float
+  manualCostOverride        Float?
+  finalProductCost          Float
+
+  productPrice              Float
+
   communityVisibility       String
-  
-  isActive                  Boolean      @default(true)
-  companyId                 String       @db.ObjectId
+  isActive                  Boolean  @default(true)
 
-  company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
+  companyId                 String   @db.ObjectId
+  company                   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  createdAt                 DateTime     @default(now())
-  updatedAt                 DateTime     @updatedAt
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 
   @@map("products")
 }

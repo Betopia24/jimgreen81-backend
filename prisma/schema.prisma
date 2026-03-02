@@ -125,12 +125,12 @@ model RawMaterial {
   activeComponentName             String
   activePercentage                Int
   activePercentageChemicalFormula String
+  formulas                        RawMaterialFormula[]
   estimatedCost                   Int
-  saltToInhibit                   String
-  formulaForInhibitionPerformance String
   bandUpperCushion                String
   bandLowerCushion                String
   communityVisibility             String
+  additionalInfomation            String?  
   isActive                        Boolean      @default(true)
   companyId                       String       @db.ObjectId
   company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
@@ -140,6 +140,13 @@ model RawMaterial {
 
   @@map("raw_materials")
 }
+
+type RawMaterialFormula {
+  salToInhibit                    String
+  applicableIonicStrength         String
+  formulaForInhibitionPerformance String
+}
+
 
 // =========================== Product ========================
 model Product {

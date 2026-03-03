@@ -130,7 +130,7 @@ model RawMaterial {
   bandUpperCushion                String
   bandLowerCushion                String
   communityVisibility             String
-  additionalInfomation            String?  
+  additionalInformation           String?  
   isActive                        Boolean      @default(true)
   companyId                       String       @db.ObjectId
   company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)

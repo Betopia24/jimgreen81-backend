@@ -111,7 +111,6 @@ const createProduct = async (data: TCreateProductInput) => {
 const getProductsByCompanyId = async (companyId: string) => {
   return prisma.product.findMany({
     where: { companyId },
-    include: { company: true },
     orderBy: { createdAt: "desc" },
   });
 };

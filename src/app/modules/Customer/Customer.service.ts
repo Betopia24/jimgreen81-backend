@@ -21,12 +21,11 @@ const createCustomer = async (data: TCreateCustomerInput) => {
 const getCustomersByCompanyId = async (companyId: string) => {
   const result = await prisma.customer.findMany({
     where: { companyId },
-    include: {
-      company: true,
-      assets: true,
-    },
     orderBy: {
       createdAt: "desc",
+    },
+    include: {
+      _count: true,
     },
   });
 
@@ -36,21 +35,6 @@ const getCustomersByCompanyId = async (companyId: string) => {
 const getCustomerList = async (companyId: string) => {
   const result = await prisma.customer.findMany({
     where: { companyId, isActive: true },
-    select: {
-      id: true,
-      name: true,
-      address: true,
-      location: true,
-      siteName: true,
-      company: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          location: true,
-        },
-      },
-    },
     orderBy: {
       createdAt: "desc",
     },

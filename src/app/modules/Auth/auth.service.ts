@@ -161,7 +161,13 @@ export class AuthService {
         createdAt: true,
         updatedAt: true,
         companyMember: {
-          select: { role: true, companyId: true, status: true },
+          select: {
+            role: true,
+            company: {
+              select: { id: true, name: true, email: true, isActive: true },
+            },
+            status: true,
+          },
         },
       },
     });
@@ -204,7 +210,7 @@ export class AuthService {
     const tokens = this.getLoginTokens({ id: user.id, role: user.role });
 
     const activeSubscription = await activeSubscriptionInformation(
-      restUserResult.companyMember?.companyId,
+      restUserResult.companyMember?.company.id,
     );
 
     return { ...tokens, user: { ...restUserResult, activeSubscription } };

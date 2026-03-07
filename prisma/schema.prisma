@@ -203,24 +203,50 @@ model Customer {
 
 
 model Asset {
-  id                    String       @id @default(auto()) @map("_id") @db.ObjectId
-  name                  String
-  type                  String       // e.g Cooling Tower, Evaporative Condenser, Once-Through Cooling, Seawater Cooling Tower, Adiabatic Cooler
-  location              String
-  installationDate      String
-  systemVolume          String
-  flowRate              String
-  operatingTemperature  String
-  cyclesOfConcentration String
-  materialType          String // e.g Carbon Steel, Stainless Steel, Copper, Galvanized Steel
-  currentCondition      String // e.g 
-  knownIssues           String
-  customerId            String       @db.ObjectId
+  id                                    String       @id @default(auto()) @map("_id") @db.ObjectId
+  customerId                            String       @db.ObjectId
+  name                                  String
+  type                                  String
+  towerType                             String?
+  fillType                              String?
+  criticalHeatExchangerDesign           String?
+  recirculationRate                     Int?
+  recirculationRateType                 String?
+  tonnageOfCooling                      Int?
+  systemVolume                          Int?
+  systemVolumeType                      String?
+  supplyTemperature                     Int?
+  supplyTemperatureType                 String?
+  returnTemperature                     Int?
+  returnTemperatureType                 String?
+  deltaTemperature                      Int?
+  systemMetallurgy                      String[]     @default([])
+  systemMaterials                       String[]     @default([])
+  hottestSkinTemperature                Int?
+  hottestSkinTemperatureType            String?
+  criticalHeatExchangerFlowRate         Int?
+  criticalHeatExchangerFlowRateType     String?
 
-  customer              Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  // 3rd assets
+  flowRate                              Int?
+  flowRateType                          String?
+  dischargeTemperature                  Int?
+  dischargeTemperatureType              String?
+  criticalCooling                       String?
+  criticalFlowRate                      Int?
+  criticalFlowRateType                  String?
 
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
+  NSFStandard60                         Boolean?     @default(false)
+  NSFG5G7                               Boolean?     @default(false)
+  GRAS                                  Boolean?     @default(false)
+  environmentalDischargeLimits          Json?
+  productPrograms                       Json?
+  controlVariablesAndTargets            Json?
+
+  customer                              Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdAt                             DateTime     @default(now())
+  updatedAt                             DateTime     @updatedAt
 
   @@map("assets")
 }

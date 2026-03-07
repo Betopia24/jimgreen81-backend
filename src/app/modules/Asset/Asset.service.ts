@@ -3,37 +3,71 @@ import AppError from "../../../errors/AppError";
 import prisma from "../../../db/prisma";
 import { TCreateAssetInput, TUpdateAssetInput } from "./Asset.interface";
 
-const createAsset = async (data: TCreateAssetInput) => {
-  const result = await prisma.asset.create({
-    data,
-    include: {
-      customer: {
-        include: {
-          company: true,
-        },
+// Helper function to populate product information in productPrograms
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const populateProductPrograms = async (asset: any) => {
+  if (!asset.productPrograms || !Array.isArray(asset.productPrograms)) {
+    return asset;
+  }
+
+  const productIds = asset.productPrograms
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((program: any) => program.productId)
+    .filter((id: string) => id && id.trim() !== "");
+
+  if (productIds.length === 0) {
+    return asset;
+  }
+
+  // Fetch all products
+  const products = await prisma.product.findMany({
+    where: {
+      id: {
+        in: productIds,
       },
     },
   });
 
-  return result;
+  // Create a map for quick lookup
+  const productMap = new Map(products.map((p) => [p.id, p]));
+
+  // Populate productPrograms with product information
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const enrichedProductPrograms = asset.productPrograms.map((program: any) => ({
+    ...program,
+    product: productMap.get(program.productId) || null,
+  }));
+
+  return {
+    ...asset,
+    productPrograms: enrichedProductPrograms,
+  };
+};
+
+const createAsset = async (data: TCreateAssetInput) => {
+  const result = await prisma.asset.create({
+    data,
+    include: {
+      customer: true,
+    },
+  });
+
+  return populateProductPrograms(result);
 };
 
 const getAssetsByCustomerId = async (customerId: string) => {
-  const result = await prisma.asset.findMany({
+  const assets = await prisma.asset.findMany({
     where: { customerId },
     include: {
-      customer: {
-        include: {
-          company: true,
-        },
-      },
+      customer: true,
     },
     orderBy: {
       createdAt: "desc",
     },
   });
 
-  return result;
+  // Populate product programs for each asset
+  return Promise.all(assets.map((asset) => populateProductPrograms(asset)));
 };
 
 const getAssetById = async (id: string) => {
@@ -52,7 +86,7 @@ const getAssetById = async (id: string) => {
     throw new AppError(status.NOT_FOUND, "Asset not found!");
   }
 
-  return result;
+  return populateProductPrograms(result);
 };
 
 const updateAsset = async (id: string, data: TUpdateAssetInput) => {
@@ -68,15 +102,11 @@ const updateAsset = async (id: string, data: TUpdateAssetInput) => {
     where: { id },
     data,
     include: {
-      customer: {
-        include: {
-          company: true,
-        },
-      },
+      customer: true,
     },
   });
 
-  return result;
+  return populateProductPrograms(result);
 };
 
 const deleteAsset = async (id: string) => {

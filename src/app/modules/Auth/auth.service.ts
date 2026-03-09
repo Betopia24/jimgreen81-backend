@@ -218,7 +218,7 @@ export class AuthService {
 
   // Social Login
   static socialLogin = async (payload: TSocialLogin) => {
-    const { provider, token } = payload;
+    const { provider: LoginProvider, token } = payload;
 
     let userInfo;
 
@@ -237,10 +237,46 @@ export class AuthService {
     const firstName = parts[0] ?? "";
     const lastName = parts.length > 1 ? parts.slice(1).join(" ") : "";
 
-    const existUser = await prisma.user.findUnique({ where: { email } });
+    const existUser = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        password: true,
+        provider: true,
+        avatar: true,
+        isEmailVerified: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        companyMember: {
+          select: {
+            role: true,
+            company: {
+              select: { id: true, name: true, email: true, isActive: true },
+            },
+            status: true,
+          },
+        },
+      },
+    });
 
     if (existUser) {
-      return this.getLoginTokens({ id: existUser.id, role: existUser.role });
+      const { password, provider, ...restUserResult } = existUser;
+
+      const tokens = this.getLoginTokens({
+        id: existUser.id,
+        role: existUser.role,
+      });
+
+      const activeSubscription = await activeSubscriptionInformation(
+        restUserResult.companyMember?.company.id,
+      );
+
+      return { ...tokens, user: { ...restUserResult, activeSubscription } };
     }
 
     // Find existing user OR create new
@@ -253,11 +289,42 @@ export class AuthService {
         lastName,
         avatar,
         password: "",
-        provider: provider,
+        provider: LoginProvider,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        password: true,
+        provider: true,
+        avatar: true,
+        isEmailVerified: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        companyMember: {
+          select: {
+            role: true,
+            company: {
+              select: { id: true, name: true, email: true, isActive: true },
+            },
+            status: true,
+          },
+        },
       },
     });
 
-    return this.getLoginTokens({ id: user.id, role: user.role });
+    const { password, provider, ...restUserResult } = user;
+
+    const tokens = this.getLoginTokens({ id: user.id, role: user.role });
+
+    const activeSubscription = await activeSubscriptionInformation(
+      restUserResult.companyMember?.company.id,
+    );
+
+    return { ...tokens, user: { ...restUserResult, activeSubscription } };
   };
 
   // Forgot Password

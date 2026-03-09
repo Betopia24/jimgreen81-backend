@@ -27,13 +27,20 @@ export const UserService = {
         lastName: true,
         email: true,
         avatar: true,
+        provider: true,
         isEmailVerified: true,
         role: true,
         status: true,
         createdAt: true,
         updatedAt: true,
         companyMember: {
-          select: { role: true, companyId: true, status: true },
+          select: {
+            role: true,
+            company: {
+              select: { id: true, name: true, email: true, isActive: true },
+            },
+            status: true,
+          },
         },
       },
     });
@@ -41,7 +48,7 @@ export const UserService = {
     if (!userInfo) throw new AppError(httpStatus.NOT_FOUND, "User not Found!");
 
     const activeSubscription = await activeSubscriptionInformation(
-      userInfo.companyMember?.companyId,
+      userInfo.companyMember?.company.id,
     );
 
     return { ...userInfo, activeSubscription };

@@ -10,6 +10,7 @@ import { assetRoutes } from "../modules/Asset/Asset.route";
 import { reportAnalysisRoutes } from "../modules/ReportAnalycis/reportAnalysis.routes";
 import { PlanRoutes } from "../modules/Plan/plan.route";
 import { PaymentRoutes } from "../modules/Payment/Payment.routes";
+import { analysisLabRoutes } from "../modules/AnalysisLab/analysisLab.routes";
 
 const routers = Router();
 const moduleRoutes: { path: string; route: Router }[] = [
@@ -48,6 +49,10 @@ const moduleRoutes: { path: string; route: Router }[] = [
   {
     path: "/report-analysis",
     route: reportAnalysisRoutes,
+  },
+  {
+    path: "/report-analysis/water",
+    route: analysisLabRoutes,
   },
   {
     path: "/plans",

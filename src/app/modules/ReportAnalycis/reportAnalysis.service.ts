@@ -5,13 +5,10 @@ import { aiClient } from "../../../config/aiClient";
 import prisma from "../../../db/prisma";
 import {
   IReportFilterRequest,
-  TAnalyzeReportInput,
-  TBatchSaturationAnalysisInput,
-  TCalculateCoolingTowerInput,
-  TCalculateIndicesInput,
   TModifyReportGraphInput,
-  TPredictCorrosionRateInput,
   TRecalculateReportInput,
+  TSaturationAnalysisInput,
+  TCreateWaterReportInput,
 } from "./reportAnalysis.interface";
 import {
   reportParameterArrayToObject,
@@ -43,6 +40,7 @@ const extractReportFile = async (payload: { file: Express.Multer.File }) => {
 
     const result = aiResult.data;
     return {
+      title: payload.file.originalname,
       parameters: reportParameterObjectToArray(result.parameters),
       validation: result.validation,
     };
@@ -57,96 +55,107 @@ const extractReportFile = async (payload: { file: Express.Multer.File }) => {
   }
 };
 
-const analyzeReport = async (payload: { data: TAnalyzeReportInput }) => {
-  const { customerId } = payload.data;
+const createWaterReport = async (payload: {
+  data: TCreateWaterReportInput;
+}) => {
+  const { assetId, sampleLocation, sampleDate, ...rest } = payload.data;
 
-  const customer = await prisma.customer.findUnique({
-    where: { id: customerId },
+  const asset = await prisma.asset.findUnique({
+    where: { id: assetId },
+    include: { customer: true },
   });
 
-  if (!customer) {
-    throw new AppError(
-      status.NOT_FOUND,
-      "Customer not found with the provided customerId!",
-    );
+  if (!asset) {
+    throw new AppError(status.NOT_FOUND, "Asset not found!");
   }
 
-  const analyzePayload = {
-    parameters: reportParameterArrayToObject(payload.data.parameters),
-  };
+  const parameters = reportParameterArrayToObject(rest.parameters);
 
   try {
-    const aiResult = await aiClient.post("/water/analyze-data", analyzePayload);
+    // Call AI for professional insights (Industrial Grade Score, Risks, etc.)
+    const aiResult = await aiClient.post("/water/analyze-data", {
+      parameters,
+      sample_location: sampleLocation,
+      sample_date: sampleDate,
+    });
+
+    console.log(aiResult.data);
 
     const result = aiResult.data;
 
-    const existingReport = await prisma.waterReport.findFirst({
-      where: {
-        report_id: result.report_id,
-      },
-    });
-
-    const reportResult = await prisma.report.create({
+    const reportResult = await prisma.waterReport.create({
       data: {
-        companyId: customer.companyId,
-        waterReportId: existingReport?.id,
-        customerId: customerId,
+        title: rest.title,
+        assetId,
+        customerId: asset.customerId,
+        companyId: asset.customer.companyId,
+        sampleLocation: sampleLocation,
+        sampleDate: sampleDate,
+        extractedParameters: parameters,
+        // AI Insights
+        parameterGraph: result.parameter_graph,
+        chemicalStatus: result.chemical_status,
+        totalScore: result.total_score,
+        qualityReport: result.quality_report,
+        contaminationRisk: result.contamination_risk,
       },
-      select: {
-        id: true,
-        companyId: true,
-        createdAt: true,
+      include: {
+        asset: true,
         customer: true,
-        waterReport: true,
       },
     });
 
     return reportResult;
   } catch (error) {
-    throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
-      "Failed to analyze data!\n" +
-        " " +
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (error as any).response?.data.detail || (error as any).message,
-    );
+    // If AI fails, we still save the report but without insights
+    const reportResult = await prisma.waterReport.create({
+      data: {
+        title: rest.title,
+        assetId,
+        customerId: asset.customerId,
+        companyId: asset.customer.companyId,
+        sampleLocation: sampleLocation,
+        sampleDate: sampleDate,
+        extractedParameters: parameters,
+      },
+      include: {
+        asset: true,
+        customer: true,
+      },
+    });
+
+    return reportResult;
   }
 };
 
 const modifyReportGraph = async (payload: {
   data: TModifyReportGraphInput;
 }) => {
-  const report = await prisma.report.findUnique({
+  const report = await prisma.waterReport.findUnique({
     where: { id: payload.data.reportId },
     select: {
       id: true,
-      waterReport: {
-        select: {
-          id: true,
-          report_id: true,
-        },
-      },
+      originalFilename: true,
     },
   });
 
-  if (!report?.waterReport) {
-    throw new AppError(status.NOT_FOUND, "Report not found!");
+  if (!report) {
+    throw new AppError(status.NOT_FOUND, "Water Report not found!");
   }
 
   try {
+    // Note: If the AI engine still expects a 'report_id', we might need to handle that mapping.
+    // For now, using the DB id.
     await aiClient.post("/water/graph/modify", {
-      report_id: report.waterReport.report_id,
+      report_id: report.id,
       prompt: payload.data.prompt,
     });
 
-    const reportResult = await prisma.report.findUnique({
+    const reportResult = await prisma.waterReport.findUnique({
       where: { id: payload.data.reportId },
-      select: {
-        id: true,
-        companyId: true,
-        createdAt: true,
+      include: {
+        asset: true,
         customer: true,
-        waterReport: true,
       },
     });
 
@@ -165,35 +174,34 @@ const modifyReportGraph = async (payload: {
 const recalculateReport = async (payload: {
   data: TRecalculateReportInput;
 }) => {
-  const report = await prisma.report.findUnique({
+  const report = await prisma.waterReport.findUnique({
     where: { id: payload.data.reportId },
-    include: {
-      waterReport: true,
-    },
   });
 
-  if (!report || !report.waterReport) {
-    throw new AppError(status.NOT_FOUND, "Report not found!");
+  if (!report) {
+    throw new AppError(status.NOT_FOUND, "Water Report not found!");
   }
 
   try {
     const aiResult = await aiClient.post("/water/recalculate", {
-      report_id: report.waterReport.report_id,
+      report_id: report.id,
       adjusted_parameters: payload.data.adjustedParameters,
     });
 
-    const reportResult = await prisma.report.findUnique({
+    // Update the record with new extracted parameters if needed
+    // Assuming AI returns updated data
+    const updatedReport = await prisma.waterReport.update({
       where: { id: payload.data.reportId },
-      select: {
-        id: true,
-        companyId: true,
-        createdAt: true,
+      data: {
+        extractedParameters: aiResult.data.parameters,
+      },
+      include: {
+        asset: true,
         customer: true,
-        waterReport: true,
       },
     });
 
-    return reportResult;
+    return updatedReport;
   } catch (error) {
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,
@@ -214,7 +222,7 @@ const reportHistory = async (payload: {
     PaginationHelper.calculatePagination(payload.options);
   const { searchTerm } = payload.filters;
 
-  const andConditions: Prisma.ReportWhereInput[] = [
+  const andConditions: Prisma.WaterReportWhereInput[] = [
     { companyId: payload.companyId },
   ];
 
@@ -223,31 +231,25 @@ const reportHistory = async (payload: {
       OR: [
         {
           customer: {
-            is: {
-              name: {
-                contains: searchTerm,
-                mode: "insensitive",
-              },
+            name: {
+              contains: searchTerm,
+              mode: "insensitive",
             },
           },
         },
         {
-          waterReport: {
-            is: {
-              report_id: {
-                contains: searchTerm,
-                mode: "insensitive",
-              },
-            },
+          originalFilename: {
+            contains: searchTerm,
+            mode: "insensitive",
           },
         },
       ],
     });
   }
 
-  const whereConditions: Prisma.ReportWhereInput = { AND: andConditions };
+  const whereConditions: Prisma.WaterReportWhereInput = { AND: andConditions };
 
-  const reports = await prisma.report.findMany({
+  const reports = await prisma.waterReport.findMany({
     where: whereConditions,
     skip,
     take: limit,
@@ -259,24 +261,22 @@ const reportHistory = async (payload: {
         : {
             createdAt: "desc",
           },
-    select: {
-      id: true,
-      companyId: true,
-      createdAt: true,
+    include: {
+      asset: true,
       customer: true,
-      waterReport: true,
     },
   });
 
   const formattedReports = reports.map((report) => ({
     id: report.id,
-    report_id: report.waterReport?.report_id,
-    customerName: report.customer.name,
-    total_score: report.waterReport?.total_score,
+    assetName: report.asset?.name,
+    customerName: report.customer?.name,
+    sampleLocation: report.sampleLocation,
+    sampleDate: report.sampleDate,
     createdAt: report.createdAt,
   }));
 
-  const total = await prisma.report.count({
+  const total = await prisma.waterReport.count({
     where: whereConditions,
   });
 
@@ -292,157 +292,150 @@ const reportHistory = async (payload: {
 };
 
 const getSingleReport = async (payload: { reportId: string }) => {
-  const report = await prisma.report.findUnique({
+  const report = await prisma.waterReport.findUnique({
     where: {
       id: payload.reportId,
     },
-    select: {
-      id: true,
-      companyId: true,
-      createdAt: true,
+    include: {
+      asset: true,
       customer: true,
-      waterReport: true,
     },
   });
 
   return report;
 };
 
-const calculateWaterIndices = async (payload: {
-  data: TCalculateIndicesInput;
+const saturationAnalysis = async (payload: {
+  data: TSaturationAnalysisInput;
 }) => {
-  const { report_id, ...data } = payload.data;
+  const { assetId, waterReportId, inputConfig, treatment } = payload.data;
 
-  if (report_id) {
-    const report = await prisma.waterReport.findFirst({
-      where: { report_id: report_id },
-    });
+  // 1. Fetch required context
+  const asset = await prisma.asset.findUnique({
+    where: { id: assetId },
+    include: { customer: true },
+  });
 
-    if (!report) {
-      throw new AppError(status.NOT_FOUND, "Report not found!");
-    }
+  const waterReport = await prisma.waterReport.findUnique({
+    where: { id: waterReportId },
+  });
+
+  if (!asset || !waterReport) {
+    throw new AppError(status.NOT_FOUND, "Asset or Water Report not found!");
   }
 
-  // return payload.data;
+  // 2. Map Asset Data for defaults (if not in inputConfig)
+  const cocData = asset?.controlVariablesAndTargets
+    ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (asset.controlVariablesAndTargets as any[]).find(
+        (target) => target.variable === "COC",
+      )
+    : null;
 
-  const aiPath = report_id
-    ? `/water/calculate-indices?report_id=${report_id}`
-    : "/water/calculate-indices";
+  const tempData = asset?.controlVariablesAndTargets
+    ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (asset.controlVariablesAndTargets as any[]).find(
+        (target) => target.variable === "Temperature",
+      )
+    : null;
 
-  try {
-    const aiResult = await aiClient.post(aiPath, data);
+  const phData = asset?.controlVariablesAndTargets
+    ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (asset.controlVariablesAndTargets as any[]).find(
+        (target) => target.variable === "pH",
+      )
+    : null;
 
-    return aiResult.data.indices;
-  } catch (error) {
-    throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
-      "Failed to calculate water indices!\n" +
-        " " +
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (error as any).response?.data.detail || (error as any).message,
-    );
-  }
-};
+  const assetTreatmentData =
+    asset?.productPrograms && Array.isArray(asset.productPrograms)
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (asset.productPrograms as any[])[0]
+      : null;
 
-const calculateCoolingTower = async (payload: {
-  data: TCalculateCoolingTowerInput;
-}) => {
-  // return payload.data;
+  // 3. Construct AI Payload (Merging report chemical data + asset operational data)
+  const aiPayload = {
+    salt_id: inputConfig.salt_id || "Calcite",
+    treatment_id:
+      inputConfig.treatment_id || assetTreatmentData?.productId || "HEDP",
+    dosage_ppm:
+      inputConfig.dosage_ppm ||
+      (assetTreatmentData?.dosage
+        ? parseFloat(assetTreatmentData.dosage)
+        : 2.0),
+    coc_min: inputConfig.coc_min || cocData?.minValue || 1,
+    coc_max: inputConfig.coc_max || cocData?.maxValue || 10,
+    coc_interval: inputConfig.coc_interval || 1,
+    temp_min: inputConfig.temp_min || tempData?.minValue || 110,
+    temp_max: inputConfig.temp_max || tempData?.maxValue || 160,
+    temp_interval: inputConfig.temp_interval || 10,
+    temp_unit: inputConfig.temp_unit || tempData?.unit || "F",
+    ph_mode: inputConfig.ph_mode || "fixed",
+    fixed_ph:
+      inputConfig.fixed_ph || phData?.maxValue || phData?.minValue || 8.2,
+    adjustment_chemical: inputConfig.adjustment_chemical || "H2SO4",
+    balance_cation: inputConfig.balance_cation || "Na",
+    balance_anion: inputConfig.balance_anion || "Cl",
 
-  try {
-    const aiResult = await aiClient.post("/water/cooling-tower", payload.data);
+    // Base water parameters from chemical snapshot
+    base_water_parameters: waterReport.extractedParameters,
 
-    return aiResult.data.cooling_tower_analysis;
-  } catch (error) {
-    throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
-      "Failed to calculate cooling tower!\n" +
-        " " +
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (error as any).response?.data.detail || (error as any).message,
-    );
-  }
-};
-
-const batchSaturationAnalysis = async (payload: {
-  data: TBatchSaturationAnalysisInput;
-}) => {
-  const {
-    ph_range_min,
-    ph_range_max,
-    coc_range_min,
-    coc_range_max,
-    temp_range_min,
-    temp_range_max,
-    ...rest
-  } = payload.data;
-
-  const transformedData = {
-    ...rest,
-    ph_range: [ph_range_min, ph_range_max],
-    coc_range: [coc_range_min, coc_range_max],
-    temp_range: [temp_range_min, temp_range_max],
+    // Additional asset context
+    asset_info: {
+      name: asset.name,
+      type: asset.type,
+      towerType: asset.towerType,
+      systemVolume: asset.systemVolume,
+      systemMetallurgy: asset.systemMetallurgy,
+    },
   };
 
-  if (payload.data.report_id) {
-    const report = await prisma.waterReport.findFirst({
-      where: { report_id: payload.data.report_id },
+  // 4. Run Simulation via AI
+  try {
+    const aiResult = await aiClient.post("/water/batch-saturation", aiPayload);
+
+    // 5. Store Analysis Result in DB
+    const analysisRecord = await prisma.saturationAnalysis.create({
+      data: {
+        companyId: asset.customer.companyId,
+        customerId: asset.customerId,
+        assetId: asset.id,
+        waterReportId: waterReport.id,
+        inputConfig: inputConfig as any,
+        productId: treatment?.productId,
+        rawMaterialId: treatment?.rawMaterialId,
+        dosage: treatment?.dosage,
+        aiResponse: aiResult.data,
+        graphData: aiResult.data.graphData || aiResult.data, // Map appropriately
+        status: "DONE",
+      },
+      include: {
+        asset: true,
+        waterReport: true,
+      },
     });
 
-    if (!report) {
-      throw new AppError(status.NOT_FOUND, "Report not found!");
-    }
-  }
-
-  // return transformedData;
-
-  try {
-    const aiResult = await aiClient.post(
-      "/water/batch-saturation",
-      transformedData,
-    );
-
-    return aiResult.data;
+    return analysisRecord;
   } catch (error) {
-    throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
-      "Failed to batch saturation analysis!\n" +
-        " " +
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (error as any).response?.data.detail || (error as any).message,
-    );
-  }
-};
-
-const predictCorrosionRate = async (payload: {
-  data: TPredictCorrosionRateInput;
-}) => {
-  const { report_id, ...data } = payload.data;
-
-  if (report_id) {
-    const report = await prisma.waterReport.findFirst({
-      where: { report_id: report_id },
+    // Save as FAILED if possible
+    await prisma.saturationAnalysis.create({
+      data: {
+        companyId: asset.customer.companyId,
+        customerId: asset.customerId,
+        assetId: asset.id,
+        waterReportId: waterReport.id,
+        inputConfig: inputConfig as any,
+        status: "FAILED",
+        graphData: {},
+        aiResponse: {
+          error: (error as any).message,
+          detail: (error as any).response?.data,
+        },
+      },
     });
 
-    if (!report) {
-      throw new AppError(status.NOT_FOUND, "Report not found!");
-    }
-  }
-
-  // return payload.data;
-
-  const aiPath = report_id
-    ? `/water/corrosion-rate?report_id=${report_id}`
-    : "/water/corrosion-rate";
-
-  try {
-    const aiResult = await aiClient.post(aiPath, data);
-
-    return aiResult.data;
-  } catch (error) {
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,
-      "Failed to predict corrosion rate!\n" +
+      "Failed to perform saturation analysis!\n" +
         " " +
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (error as any).response?.data.detail || (error as any).message,
@@ -452,13 +445,10 @@ const predictCorrosionRate = async (payload: {
 
 export const ReportAnalysisService = {
   extractReportFile,
-  analyzeReport,
+  createWaterReport,
   modifyReportGraph,
   recalculateReport,
   reportHistory,
   getSingleReport,
-  calculateWaterIndices,
-  calculateCoolingTower,
-  batchSaturationAnalysis,
-  predictCorrosionRate,
+  saturationAnalysis,
 };

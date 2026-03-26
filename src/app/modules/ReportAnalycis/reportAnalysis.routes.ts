@@ -16,13 +16,12 @@ router.post(
   ReportAnalysisController.extractReportFile,
 );
 
-// Analyze Report
+// Create Water Report (Manual Entry / Save Edited OCR)
 router.post(
-  "/analyze-report",
+  "/water-report",
   auth(),
-  needCompanySubscription("REPORT_GENERATE"),
-  validateRequest(ReportAnalysisValidationSchema.analyzeReport),
-  ReportAnalysisController.analyzeReport,
+  validateRequest(ReportAnalysisValidationSchema.createWaterReport),
+  ReportAnalysisController.createWaterReport,
 );
 
 // Modify Report Graph
@@ -48,36 +47,13 @@ router.get("/history/:companyId", ReportAnalysisController.reportHistory);
 // Get Single Report
 router.get("/report/:reportId", ReportAnalysisController.getSingleReport);
 
-// Calculate Water Indices
+// Saturation Analysis
 router.post(
-  "/water/calculate-indices",
+  "/saturation-analysis",
   auth(),
-  validateRequest(ReportAnalysisValidationSchema.calculateIndices),
-  ReportAnalysisController.calculateWaterIndices,
-);
-
-// Calculate Cooling Tower
-router.post(
-  "/water/cooling-tower",
-  auth(),
-  validateRequest(ReportAnalysisValidationSchema.calculateCoolingTower),
-  ReportAnalysisController.calculateCoolingTower,
-);
-
-// Batch Saturation Analysis
-router.post(
-  "/water/batch-saturation",
-  auth(),
-  validateRequest(ReportAnalysisValidationSchema.batchSaturationAnalysis),
-  ReportAnalysisController.batchSaturationAnalysis,
-);
-
-// Predict Corrosion Rate
-router.post(
-  "/water/corrosion-rate",
-  auth(),
-  validateRequest(ReportAnalysisValidationSchema.predictCorrosionRate),
-  ReportAnalysisController.predictCorrosionRate,
+  needCompanySubscription("REPORT_GENERATE"),
+  validateRequest(ReportAnalysisValidationSchema.saturationAnalysis),
+  ReportAnalysisController.saturationAnalysis,
 );
 
 export const reportAnalysisRoutes = router;

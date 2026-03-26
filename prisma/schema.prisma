@@ -80,10 +80,11 @@ model Company {
   location        String
   isActive        Boolean      @default(true)
   companyMembers  CompanyMember[]
+  customers       Customer[]
   rawMaterials    RawMaterial[]
   products        Product[]
-  customers       Customer[]
-  reports         Report[]
+  waterReports    WaterReport[]
+  analysis        SaturationAnalysis[]
 
   subscriptions   Subscription[]
   transactions    Transaction[]
@@ -193,7 +194,8 @@ model Customer {
   company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
 
   assets          Asset[]
-  reports         Report[]
+  waterReports    WaterReport[]
+  analysis        SaturationAnalysis[]
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -243,6 +245,9 @@ model Asset {
   productPrograms                       Json?
   controlVariablesAndTargets            Json?
 
+  waterReports  WaterReport[]
+  analysis      SaturationAnalysis[]
+
   customer                              Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   createdAt                             DateTime     @default(now())
@@ -253,43 +258,73 @@ model Asset {
 
 // =========================== Water Report From AI ==========================
 model WaterReport {
-  id                      String       @id @default(auto()) @map("_id") @db.ObjectId
-  report_id               String       @unique
-  sample_location         String?
-  sample_date             String?
-  original_filename       String?
-  extracted_parameters    Json?
-  parameter_graph         Json?
-  chemical_status         Json?
-  total_score             Json?
-  quality_report          Json?
-  chemical_composition    Json?
-  biological_indicators   Json?
-  compliance_checklist    Json?
-  contamination_risk      Json?
-  report                  Report?
+  id                      String   @id @default(auto()) @map("_id") @db.ObjectId
 
-  created_at               DateTime     @default(now())
-  updated_at               DateTime     @updatedAt
+  title                  String
+  assetId                String   @db.ObjectId
+  customerId             String   @db.ObjectId
+  companyId              String   @db.ObjectId
+
+  sampleLocation         String?
+  sampleDate             String?
+  originalFilename       String?
+
+  extractedParameters    Json?
+  chemicalComposition    Json?
+
+  // AI generated insights
+  parameterGraph         Json?
+  chemicalStatus         Json?
+  totalScore             Json?
+  qualityReport          Json?
+  contaminationRisk      Json?
+
+  // relation
+  asset                  Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  customer               Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  company                Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  analyses               SaturationAnalysis[]
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   @@map("water_reports")
 }
 
-// =========================== Report ==========================
-model Report {
-  id              String       @id @default(auto()) @map("_id") @db.ObjectId
-  companyId       String       @db.ObjectId
-  customerId      String       @db.ObjectId
-  waterReportId   String?      @db.ObjectId  @unique  // foreign key to WaterReport.id
+model SaturationAnalysis {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
 
-  company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
-  customer        Customer     @relation(fields: [customerId], references: [id],onDelete: Cascade)
-  waterReport     WaterReport? @relation(fields: [waterReportId], references: [id], onDelete: Cascade)
+  companyId       String   @db.ObjectId
+  customerId      String   @db.ObjectId
+  assetId         String   @db.ObjectId
+  waterReportId   String   @db.ObjectId
 
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
+  // INPUT CONFIG
+  inputConfig     Json     // coc, temp, pH, salt, etc.
 
-  @@map("reports")
+  // Selected treatment
+  productId       String?  @db.ObjectId
+  rawMaterialId   String?  @db.ObjectId
+  dosage          Float?
+
+  // AI RESPONSE (IMPORTANT)
+  aiResponse      Json     // full AI output
+  graphData       Json     // optimized for frontend
+  summary         Json?    // optional insights
+
+  status          String   @default("PENDING") // PENDING, DONE, FAILED
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // relations
+  waterReport     WaterReport @relation(fields: [waterReportId], references: [id])
+  company         Company     @relation(fields: [companyId], references: [id])
+  customer        Customer    @relation(fields: [customerId], references: [id])
+  asset           Asset       @relation(fields: [assetId], references: [id])
+
+  @@map("saturation_analyses")
 }
 
 // =========================== PLAN ==========================

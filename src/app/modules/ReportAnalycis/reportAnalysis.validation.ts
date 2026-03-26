@@ -1,10 +1,4 @@
 import z from "zod";
-import {
-  batchSaturationAnalysisSchema,
-  calculateCoolingTowerSchema,
-  calculateIndicesSchema,
-  predictCorrosionRateSchema,
-} from "./reportCalculationValidation";
 
 const parameterSchemaForArray = z.object({
   name: z.string(),
@@ -14,10 +8,11 @@ const parameterSchemaForArray = z.object({
 });
 
 export const ReportAnalysisValidationSchema = {
-  analyzeReport: z.object({
-    customerId: z
-      .string({ required_error: "customerId is required" })
-      .nonempty(),
+  createWaterReport: z.object({
+    title: z.string({ required_error: "title is required" }).nonempty(),
+    assetId: z.string({ required_error: "assetId is required" }).nonempty(),
+    sampleLocation: z.string().optional(),
+    sampleDate: z.string().optional(),
     parameters: z.array(parameterSchemaForArray),
   }),
 
@@ -36,11 +31,34 @@ export const ReportAnalysisValidationSchema = {
     ),
   }),
 
-  calculateIndices: calculateIndicesSchema,
-
-  calculateCoolingTower: calculateCoolingTowerSchema,
-
-  batchSaturationAnalysis: batchSaturationAnalysisSchema,
-
-  predictCorrosionRate: predictCorrosionRateSchema,
+  saturationAnalysis: z.object({
+    assetId: z.string({ required_error: "assetId is required" }).nonempty(),
+    waterReportId: z
+      .string({ required_error: "waterReportId is required" })
+      .nonempty(),
+    inputConfig: z.object({
+      salt_id: z.string().optional(),
+      treatment_id: z.string().optional(),
+      dosage_ppm: z.number().optional(),
+      coc_min: z.number().optional(),
+      coc_max: z.number().optional(),
+      coc_interval: z.number().optional(),
+      temp_min: z.number().optional(),
+      temp_max: z.number().optional(),
+      temp_interval: z.number().optional(),
+      temp_unit: z.enum(["F", "C"]).optional(),
+      ph_mode: z.string().optional(),
+      fixed_ph: z.number().optional(),
+      adjustment_chemical: z.string().optional(),
+      balance_cation: z.string().optional(),
+      balance_anion: z.string().optional(),
+    }),
+    treatment: z
+      .object({
+        productId: z.string().optional(),
+        rawMaterialId: z.string().optional(),
+        dosage: z.number().optional(),
+      })
+      .optional(),
+  }),
 };

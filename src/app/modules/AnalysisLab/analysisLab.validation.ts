@@ -38,22 +38,6 @@ export const calculateIndicesSchema = z
         Carbonate: ParameterValueSchema,
       })
       .optional(),
-
-    // phreeqc_output: z
-    //   .object({
-    //     ionic_strength: z.number(),
-    //     equilibrium_phases: z.record(z.string(), z.number()).optional(),
-    //     saturation_indices: z
-    //       .array(
-    //         z.object({
-    //           mineral_name: z.string(),
-    //           si_value: z.number(),
-    //           status: z.string(),
-    //         }),
-    //       )
-    //       .optional(),
-    //   })
-    //   .optional(),
   })
   .refine(
     (data) =>
@@ -163,3 +147,10 @@ export const predictCorrosionRateSchema = z
         "Either provide report_id + metal_type (Option A) or full manual parameters (Option B), not both",
     },
   );
+
+export const AnalysisLabValidationSchema = {
+  calculateIndices: calculateIndicesSchema,
+  calculateCoolingTower: calculateCoolingTowerSchema,
+  batchSaturationAnalysis: batchSaturationAnalysisSchema,
+  predictCorrosionRate: predictCorrosionRateSchema,
+};

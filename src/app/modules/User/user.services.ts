@@ -367,7 +367,7 @@ export const activeSubscriptionInformation = async (companyId?: string) => {
 
   if (!activeSubscription) return null;
 
-  const totalReports = await prisma.report.count({
+  const totalReports = await prisma.waterReport.count({
     where: {
       companyId: companyId,
     },

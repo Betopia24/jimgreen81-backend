@@ -16,19 +16,8 @@ const extractReportFile = catchAsync(async (req, res) => {
   });
 });
 
-const analyzeReport = catchAsync(async (req, res) => {
-  const result = await ReportAnalysisService.analyzeReport({
-    data: req.body,
-  });
-
-  sendResponse(res, {
-    statusCode: status.OK,
-    message: "Report Successfully Analyzed!",
-    data: result,
-  });
-});
-
 const modifyReportGraph = catchAsync(async (req, res) => {
+
   const result = await ReportAnalysisService.modifyReportGraph({
     data: req.body,
   });
@@ -87,63 +76,41 @@ const getSingleReport = catchAsync(async (req, res) => {
   });
 });
 
-const calculateWaterIndices = catchAsync(async (req, res) => {
-  const result = await ReportAnalysisService.calculateWaterIndices({
+const saturationAnalysis = catchAsync(async (req, res) => {
+
+  const result = await ReportAnalysisService.saturationAnalysis({
     data: req.body,
   });
 
   sendResponse(res, {
     statusCode: status.OK,
-    message: "Successfully Calculated Water Indices!",
+    message: "Successfully performed Saturation Analysis!",
     data: result,
   });
 });
 
-const calculateCoolingTower = catchAsync(async (req, res) => {
-  const result = await ReportAnalysisService.calculateCoolingTower({
+const createWaterReport = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.createWaterReport({
     data: req.body,
   });
 
   sendResponse(res, {
     statusCode: status.OK,
-    message: "Successfully Calculated Cooling Tower!",
-    data: result,
-  });
-});
-
-const batchSaturationAnalysis = catchAsync(async (req, res) => {
-  const result = await ReportAnalysisService.batchSaturationAnalysis({
-    data: req.body,
-  });
-
-  sendResponse(res, {
-    statusCode: status.OK,
-    message: "Successfully Batch Saturation Analysis!",
-    data: result,
-  });
-});
-
-const predictCorrosionRate = catchAsync(async (req, res) => {
-  const result = await ReportAnalysisService.predictCorrosionRate({
-    data: req.body,
-  });
-
-  sendResponse(res, {
-    statusCode: status.OK,
-    message: "Successfully Predicted Corrosion Rate!",
+    message: "Water Report Successfully Created!",
     data: result,
   });
 });
 
 export const ReportAnalysisController = {
   extractReportFile,
-  analyzeReport,
+  createWaterReport,
   modifyReportGraph,
   recalculateReport,
   reportHistory,
   getSingleReport,
-  calculateWaterIndices,
-  calculateCoolingTower,
-  batchSaturationAnalysis,
-  predictCorrosionRate,
+  saturationAnalysis,
 };
+
+
+
+

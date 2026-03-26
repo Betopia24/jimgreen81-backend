@@ -24,12 +24,12 @@ export async function getReportStats(companyId: string) {
     todayCustomers,
   ] = await Promise.all([
     // TOTAL REPORTS
-    prisma.report.count({
+    prisma.waterReport.count({
       where: { companyId },
     }),
 
     // THIS MONTH REPORTS
-    prisma.report.count({
+    prisma.waterReport.count({
       where: {
         companyId,
 
@@ -38,7 +38,7 @@ export async function getReportStats(companyId: string) {
     }),
 
     // LAST MONTH REPORTS
-    prisma.report.count({
+    prisma.waterReport.count({
       where: {
         companyId,
         createdAt: {
@@ -49,7 +49,7 @@ export async function getReportStats(companyId: string) {
     }),
 
     // TODAY REPORTS
-    prisma.report.count({
+    prisma.waterReport.count({
       where: {
         companyId,
         createdAt: { gte: todayStart },
@@ -143,7 +143,7 @@ export async function getReportTrend(companyId: string, year: number) {
     const end = new Date(year, month + 1, 0);
     end.setHours(23, 59, 59, 999);
 
-    const reports = await prisma.report.count({
+    const reports = await prisma.waterReport.count({
       where: {
         companyId,
 
@@ -151,7 +151,7 @@ export async function getReportTrend(companyId: string, year: number) {
       },
     });
 
-    const customers = await prisma.report.findMany({
+    const customers = await prisma.waterReport.findMany({
       where: {
         companyId,
 
@@ -172,7 +172,7 @@ export async function getReportTrend(companyId: string, year: number) {
 }
 
 export async function getRecentReports(companyId: string, limit = 6) {
-  const reports = await prisma.report.findMany({
+  const reports = await prisma.waterReport.findMany({
     where: {
       companyId,
     },
@@ -182,17 +182,16 @@ export async function getRecentReports(companyId: string, limit = 6) {
     take: limit,
     include: {
       customer: { select: { name: true } },
-      waterReport: true,
     },
   });
 
-  return reports.map((r) => ({
+  return reports.map((r: any) => ({
     id: r.id,
-    reportId: r.waterReport?.report_id,
+    reportId: r.report_id,
     customer: r.customer.name,
-    type: r.waterReport?.contamination_risk
+    type: r.contamination_risk
       ? "Contamination Risk"
-      : r.waterReport?.compliance_checklist
+      : r.compliance_checklist
         ? "Compliance Check"
         : "Water Quality",
     status: "Completed",

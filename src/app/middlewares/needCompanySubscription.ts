@@ -54,7 +54,7 @@ export const needCompanySubscription = (
       }
 
       if (type === "REPORT_GENERATE") {
-        const currentReportCount = await prisma.report.count({
+        const currentReportCount = await prisma.waterReport.count({
           where: { companyId: getMemberInfo.companyId },
         });
 

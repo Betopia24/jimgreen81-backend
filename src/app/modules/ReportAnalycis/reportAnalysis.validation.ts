@@ -38,8 +38,9 @@ export const ReportAnalysisValidationSchema = {
       .nonempty(),
     inputConfig: z
       .object({
-        // Salts of Interest: pass array of salt names from phreeqc list e.g. ['Calcite','Gypsum']
-        // If omitted, AI will calculate for all available salts
+        // which salt to visualize SI for (AI calculates all, but this is default view)
+        salt_id: z.string().optional(),
+        // Salts of Interest: list of salts AI should calculate for
         salts_of_interest: z.array(z.string()).optional(),
         dosage_ppm: z.number().optional(),
         coc_min: z.number().optional(),

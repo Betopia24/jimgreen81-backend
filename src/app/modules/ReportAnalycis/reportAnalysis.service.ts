@@ -464,8 +464,9 @@ const createSaturationAnalysis = async (payload: {
 
   // 4. Construct AI Payload — no backend calculations, pass all raw data to AI
   const aiPayload = {
-    // === Salts of Interest (array of phreeqc salt names, e.g. ['Calcite','Gypsum','Silica']) ===
-    // If not provided, AI will run for all available salts from phreeqc dynamic list
+    // === Primary salt to visualize (AI calculates all salts regardless) ===
+    salt_id: inputConfig?.salt_id ?? null,
+    // === Salts of Interest to calculate ===
     salts_of_interest: inputConfig?.salts_of_interest ?? null,
 
     // === Operational control ranges (from Asset or body override) ===

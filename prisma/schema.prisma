@@ -259,8 +259,7 @@ model Asset {
 // =========================== Water Report From AI ==========================
 model WaterReport {
   id                      String   @id @default(auto()) @map("_id") @db.ObjectId
-
-  title                  String
+  
   assetId                String   @db.ObjectId
   customerId             String   @db.ObjectId
   companyId              String   @db.ObjectId
@@ -269,14 +268,15 @@ model WaterReport {
   sampleDate             String?
   originalFilename       String?
 
+  aiReportId             String?  @unique
   extractedParameters    Json?
-  chemicalComposition    Json?
-
-  // AI generated insights
   parameterGraph         Json?
   chemicalStatus         Json?
   totalScore             Json?
   qualityReport          Json?
+  chemicalComposition    Json?
+  biologicalIndicators   Json?
+  complianceChecklist    Json?
   contaminationRisk      Json?
 
   // relation

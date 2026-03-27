@@ -4,8 +4,8 @@ import sendResponse from "../../../shared/sendResponse";
 import { ReportAnalysisService } from "./reportAnalysis.service";
 import pickOptions from "../../../shared/pick";
 
-const extractReportFile = catchAsync(async (req, res) => {
-  const result = await ReportAnalysisService.extractReportFile({
+const extractWaterReport = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.extractWaterReport({
     file: req.file as Express.Multer.File,
   });
 
@@ -16,9 +16,8 @@ const extractReportFile = catchAsync(async (req, res) => {
   });
 });
 
-const modifyReportGraph = catchAsync(async (req, res) => {
-
-  const result = await ReportAnalysisService.modifyReportGraph({
+const modifyWaterReportGraph = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.modifyWaterReportGraph({
     data: req.body,
   });
 
@@ -29,8 +28,8 @@ const modifyReportGraph = catchAsync(async (req, res) => {
   });
 });
 
-const recalculateReport = catchAsync(async (req, res) => {
-  const result = await ReportAnalysisService.recalculateReport({
+const recalculateWaterReport = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.recalculateWaterReport({
     data: req.body,
   });
 
@@ -41,7 +40,7 @@ const recalculateReport = catchAsync(async (req, res) => {
   });
 });
 
-const reportHistory = catchAsync(async (req, res) => {
+const getWaterReportsHistory = catchAsync(async (req, res) => {
   const filters = pickOptions(req.query, ["searchTerm"]);
   const options = pickOptions(req.query, [
     "page",
@@ -50,7 +49,7 @@ const reportHistory = catchAsync(async (req, res) => {
     "sortOrder",
   ]);
 
-  const result = await ReportAnalysisService.reportHistory({
+  const result = await ReportAnalysisService.getWaterReportsHistory({
     companyId: req.params.companyId,
     filters,
     options,
@@ -64,8 +63,8 @@ const reportHistory = catchAsync(async (req, res) => {
   });
 });
 
-const getSingleReport = catchAsync(async (req, res) => {
-  const result = await ReportAnalysisService.getSingleReport({
+const getSingleWaterReport = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.getSingleWaterReport({
     reportId: req.params.reportId,
   });
 
@@ -76,9 +75,8 @@ const getSingleReport = catchAsync(async (req, res) => {
   });
 });
 
-const saturationAnalysis = catchAsync(async (req, res) => {
-
-  const result = await ReportAnalysisService.saturationAnalysis({
+const createSaturationAnalysis = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.createSaturationAnalysis({
     data: req.body,
   });
 
@@ -101,16 +99,49 @@ const createWaterReport = catchAsync(async (req, res) => {
   });
 });
 
+const getSingleSaturationAnalysis = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.getSingleSaturationAnalysis({
+    id: req.params.id,
+  });
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    message: "Saturation Analysis Successfully Retrieved!",
+    data: result,
+  });
+});
+
+const getSaturationAnalysesHistory = catchAsync(async (req, res) => {
+  const filters = pickOptions(req.query, ["searchTerm"]);
+  const options = pickOptions(req.query, [
+    "page",
+    "limit",
+    "sortBy",
+    "sortOrder",
+  ]);
+
+  const result = await ReportAnalysisService.getSaturationAnalysesHistory({
+    companyId: req.params.companyId,
+    filters,
+    options,
+  });
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    message: "Saturation Analysis History Successfully Retrieved!",
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
 export const ReportAnalysisController = {
-  extractReportFile,
+  extractWaterReport,
   createWaterReport,
-  modifyReportGraph,
-  recalculateReport,
-  reportHistory,
-  getSingleReport,
-  saturationAnalysis,
+  modifyWaterReportGraph,
+  recalculateWaterReport,
+  getWaterReportsHistory,
+  getSingleWaterReport,
+  createSaturationAnalysis,
+  getSingleSaturationAnalysis,
+  getSaturationAnalysesHistory,
 };
-
-
-
-

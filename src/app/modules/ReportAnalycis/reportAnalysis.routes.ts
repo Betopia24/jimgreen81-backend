@@ -8,52 +8,82 @@ import { needCompanySubscription } from "../../middlewares/needCompanySubscripti
 
 const router = Router();
 
-// Extract Report
+// ==========================================
+// Water Reports (Base Analytics)
+// ==========================================
+
+// Extract Report from file (OCR)
 router.post(
-  "/extract-report",
+  "/water-reports/extract",
   auth(),
   uploadFile.single("file"),
-  ReportAnalysisController.extractReportFile,
+  ReportAnalysisController.extractWaterReport,
 );
 
-// Create Water Report (Manual Entry / Save Edited OCR)
+// Create Water Report (Manual or Save OCR)
 router.post(
-  "/water-report",
+  "/water-reports",
   auth(),
   validateRequest(ReportAnalysisValidationSchema.createWaterReport),
   ReportAnalysisController.createWaterReport,
 );
 
-// Modify Report Graph
+// History of Water Reports
+router.get(
+  "/water-reports/history/:companyId",
+  auth(),
+  ReportAnalysisController.getWaterReportsHistory,
+);
+
+// Single Water Report
+router.get(
+  "/water-reports/:reportId",
+  auth(),
+  ReportAnalysisController.getSingleWaterReport,
+);
+
+// Actions on Water Reports
 router.post(
-  "/modify-report-graph",
+  "/water-reports/modify-graph",
   auth(),
   needCompanySubscription("REPORT_GENERATE"),
   validateRequest(ReportAnalysisValidationSchema.modifyReportGraph),
-  ReportAnalysisController.modifyReportGraph,
+  ReportAnalysisController.modifyWaterReportGraph,
 );
 
-// Recalculate Report
+// Recalculate Water Report
 router.post(
-  "/recalculate-report",
+  "/water-reports/recalculate",
   auth(),
   validateRequest(ReportAnalysisValidationSchema.recalculateReport),
-  ReportAnalysisController.recalculateReport,
+  ReportAnalysisController.recalculateWaterReport,
 );
 
-// Get Report History By CompanyId
-router.get("/history/:companyId", ReportAnalysisController.reportHistory);
+// ==========================================
+// Saturation Analysis (Simulations)
+// ==========================================
 
-// Get Single Report
-router.get("/report/:reportId", ReportAnalysisController.getSingleReport);
-
-// Saturation Analysis
+// Create new Saturation Analysis
 router.post(
-  "/saturation-analysis",
+  "/saturation-analyses",
   auth(),
   needCompanySubscription("REPORT_GENERATE"),
   validateRequest(ReportAnalysisValidationSchema.saturationAnalysis),
-  ReportAnalysisController.saturationAnalysis,
+  ReportAnalysisController.createSaturationAnalysis,
+);
+
+// History of Saturation Analyses
+router.get(
+  "/saturation-analyses/history/:companyId",
+  auth(),
+  ReportAnalysisController.getSaturationAnalysesHistory,
+);
+
+// Single Saturation Analysis Result
+router.get(
+  "/saturation-analyses/:id",
+  auth(),
+  ReportAnalysisController.getSingleSaturationAnalysis,
 );
 
 export const reportAnalysisRoutes = router;

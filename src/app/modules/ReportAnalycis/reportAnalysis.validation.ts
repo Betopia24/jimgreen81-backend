@@ -9,7 +9,7 @@ const parameterSchemaForArray = z.object({
 
 export const ReportAnalysisValidationSchema = {
   createWaterReport: z.object({
-    title: z.string({ required_error: "title is required" }).nonempty(),
+    filename: z.string({ required_error: "filename is required" }).nonempty(),
     assetId: z.string({ required_error: "assetId is required" }).nonempty(),
     sampleLocation: z.string().optional(),
     sampleDate: z.string().optional(),

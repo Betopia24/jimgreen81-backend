@@ -28,9 +28,9 @@ router.post(
   ReportAnalysisController.createWaterReport,
 );
 
-// History of Water Reports
+// Flexible Query Water Reports
 router.get(
-  "/water-reports/history/:companyId",
+  "/water-reports",
   auth(),
   ReportAnalysisController.getWaterReportsHistory,
 );
@@ -46,7 +46,7 @@ router.get(
 router.post(
   "/water-reports/modify-graph",
   auth(),
-  needCompanySubscription("REPORT_GENERATE"),
+  // needCompanySubscription("REPORT_GENERATE"),
   validateRequest(ReportAnalysisValidationSchema.modifyReportGraph),
   ReportAnalysisController.modifyWaterReportGraph,
 );
@@ -67,14 +67,14 @@ router.post(
 router.post(
   "/saturation-analyses",
   auth(),
-  needCompanySubscription("REPORT_GENERATE"),
+  // needCompanySubscription("REPORT_GENERATE"),
   validateRequest(ReportAnalysisValidationSchema.saturationAnalysis),
   ReportAnalysisController.createSaturationAnalysis,
 );
 
 // History of Saturation Analyses
 router.get(
-  "/saturation-analyses/history/:companyId",
+  "/saturation-analyses",
   auth(),
   ReportAnalysisController.getSaturationAnalysesHistory,
 );

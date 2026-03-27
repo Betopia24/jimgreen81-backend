@@ -41,7 +41,12 @@ const recalculateWaterReport = catchAsync(async (req, res) => {
 });
 
 const getWaterReportsHistory = catchAsync(async (req, res) => {
-  const filters = pickOptions(req.query, ["searchTerm"]);
+  const filters = pickOptions(req.query, [
+    "companyId",
+    "customerId",
+    "assetId",
+    "searchTerm",
+  ]);
   const options = pickOptions(req.query, [
     "page",
     "limit",
@@ -50,14 +55,13 @@ const getWaterReportsHistory = catchAsync(async (req, res) => {
   ]);
 
   const result = await ReportAnalysisService.getWaterReportsHistory({
-    companyId: req.params.companyId,
     filters,
     options,
   });
 
   sendResponse(res, {
     statusCode: status.OK,
-    message: "Report History Successfully Retrieved!",
+    message: "Water Reports Successfully Retrieved!",
     data: result.data,
     meta: result.meta,
   });
@@ -112,7 +116,13 @@ const getSingleSaturationAnalysis = catchAsync(async (req, res) => {
 });
 
 const getSaturationAnalysesHistory = catchAsync(async (req, res) => {
-  const filters = pickOptions(req.query, ["searchTerm"]);
+  const filters = pickOptions(req.query, [
+    "companyId",
+    "customerId",
+    "assetId",
+    "waterReportId",
+    "searchTerm",
+  ]);
   const options = pickOptions(req.query, [
     "page",
     "limit",
@@ -121,14 +131,13 @@ const getSaturationAnalysesHistory = catchAsync(async (req, res) => {
   ]);
 
   const result = await ReportAnalysisService.getSaturationAnalysesHistory({
-    companyId: req.params.companyId,
     filters,
     options,
   });
 
   sendResponse(res, {
     statusCode: status.OK,
-    message: "Saturation Analysis History Successfully Retrieved!",
+    message: "Saturation Analyses Successfully Retrieved!",
     data: result.data,
     meta: result.meta,
   });

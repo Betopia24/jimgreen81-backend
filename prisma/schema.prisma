@@ -313,8 +313,6 @@ model SaturationAnalysis {
   graphData       Json     // optimized for frontend
   summary         Json?    // optional insights
 
-  status          String   @default("PENDING") // PENDING, DONE, FAILED
-
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

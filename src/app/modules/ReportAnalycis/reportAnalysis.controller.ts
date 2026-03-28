@@ -167,6 +167,18 @@ const deleteSaturationAnalysis = catchAsync(async (req, res) => {
   });
 });
 
+const getCompanyOverview = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.getCompanyOverview({
+    companyId: req.params.companyId,
+  });
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    message: "Company Overview Successfully Retrieved!",
+    data: result,
+  });
+});
+
 export const ReportAnalysisController = {
   extractWaterReport,
   createWaterReport,
@@ -179,4 +191,5 @@ export const ReportAnalysisController = {
   getSaturationAnalysesHistory,
   deleteWaterReport,
   deleteSaturationAnalysis,
+  getCompanyOverview,
 };

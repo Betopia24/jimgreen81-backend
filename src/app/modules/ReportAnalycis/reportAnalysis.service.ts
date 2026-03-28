@@ -708,6 +708,63 @@ const deleteSaturationAnalysis = async (payload: { id: string }) => {
   return result;
 };
 
+const getCompanyOverview = async (payload: { companyId: string }) => {
+  const { companyId } = payload;
+
+  const customers = await prisma.customer.findMany({
+    where: { companyId },
+    select: {
+      id: true,
+      name: true,
+      siteName: true,
+      location: true,
+      _count: {
+        select: {
+          assets: true,
+          waterReports: true,
+        },
+      },
+      assets: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          towerType: true,
+          systemVolume: true,
+          systemMetallurgy: true,
+          systemMaterials: true,
+          recirculationRate: true,
+          _count: {
+            select: {
+              waterReports: true,
+              saturationAnalyses: true,
+            },
+          },
+          waterReports: {
+            select: {
+              id: true,
+              aiReportId: true,
+              sampleDate: true,
+              sampleLocation: true,
+              originalFilename: true,
+              assetId: true,
+              customerId: true,
+              _count: {
+                select: {
+                  saturationAnalyses: true,
+                },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      },
+    },
+  });
+
+  return { customers };
+};
+
 export const ReportAnalysisService = {
   extractWaterReport,
   createWaterReport,
@@ -720,4 +777,5 @@ export const ReportAnalysisService = {
   getSaturationAnalysesHistory,
   deleteWaterReport,
   deleteSaturationAnalysis,
+  getCompanyOverview,
 };

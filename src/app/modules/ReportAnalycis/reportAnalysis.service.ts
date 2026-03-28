@@ -122,8 +122,12 @@ const createWaterReport = async (payload: {
 const modifyWaterReportGraph = async (payload: {
   data: TModifyReportGraphInput;
 }) => {
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(payload.data.reportId);
+
   const report = await prisma.waterReport.findUnique({
-    where: { aiReportId: payload.data.reportId },
+    where: isObjectId
+      ? { id: payload.data.reportId }
+      : { aiReportId: payload.data.reportId },
     select: {
       id: true,
       aiReportId: true,
@@ -149,8 +153,24 @@ const modifyWaterReportGraph = async (payload: {
         parameterGraph: result.updated_graph,
       },
       include: {
-        asset: true,
-        customer: true,
+        asset: {
+          select: {
+            name: true,
+            type: true,
+            towerType: true,
+            fillType: true,
+          },
+        },
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            contactEmail: true,
+            contactPerson: true,
+            contactPhone: true,
+          },
+        },
       },
     });
 
@@ -169,8 +189,12 @@ const modifyWaterReportGraph = async (payload: {
 const recalculateWaterReport = async (payload: {
   data: TRecalculateReportInput;
 }) => {
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(payload.data.reportId);
+
   const report = await prisma.waterReport.findUnique({
-    where: { aiReportId: payload.data.reportId },
+    where: isObjectId
+      ? { id: payload.data.reportId }
+      : { aiReportId: payload.data.reportId },
   });
 
   if (!report) {
@@ -199,8 +223,24 @@ const recalculateWaterReport = async (payload: {
         contaminationRisk: result.contamination_risk,
       },
       include: {
-        asset: true,
-        customer: true,
+        asset: {
+          select: {
+            name: true,
+            type: true,
+            towerType: true,
+            fillType: true,
+          },
+        },
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            contactEmail: true,
+            contactPerson: true,
+            contactPhone: true,
+          },
+        },
       },
     });
 
@@ -216,92 +256,129 @@ const recalculateWaterReport = async (payload: {
   }
 };
 
+// Flexible filter: by companyId, customerId, or assetId (query params)
 const getWaterReportsHistory = async (payload: {
-  companyId: string;
-  filters: IReportFilterRequest;
+  filters: {
+    companyId?: string;
+    customerId?: string;
+    assetId?: string;
+    searchTerm?: string;
+  };
   options: IPaginationOptions;
 }) => {
-  const { page, limit, skip, sortBy, sortOrder } =
-    PaginationHelper.calculatePagination(payload.options);
-  const { searchTerm } = payload.filters;
+  const { filters, options } = payload;
+  const { companyId, customerId, assetId, searchTerm } = filters;
 
-  const andConditions: Prisma.WaterReportWhereInput[] = [
-    { companyId: payload.companyId },
-  ];
-
-  if (searchTerm) {
-    andConditions.push({
-      OR: [
-        {
-          customer: {
-            name: {
-              contains: searchTerm,
-              mode: "insensitive",
-            },
-          },
-        },
-        {
-          originalFilename: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
-        },
-      ],
-    });
+  if (!companyId && !customerId && !assetId) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      "At least one of companyId, customerId, or assetId is required!",
+    );
   }
 
-  const whereConditions: Prisma.WaterReportWhereInput = { AND: andConditions };
+  if (companyId && customerId) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      "CompanyId and CustomerId cannot be provided together!",
+    );
+  }
 
-  const reports = await prisma.waterReport.findMany({
-    where: whereConditions,
-    skip,
-    take: limit,
-    orderBy:
-      sortBy && sortOrder
-        ? {
-            [sortBy]: sortOrder,
-          }
-        : {
-            createdAt: "desc",
-          },
-    include: {
-      asset: true,
-      customer: true,
-    },
-  });
+  if (companyId && assetId) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      "CompanyId and AssetId cannot be provided together!",
+    );
+  }
 
-  const formattedReports = reports.map((report) => ({
-    id: report.id,
-    assetName: report.asset?.name,
-    customerName: report.customer?.name,
-    sampleLocation: report.sampleLocation,
-    sampleDate: report.sampleDate,
-    createdAt: report.createdAt,
-  }));
+  if (customerId && assetId) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      "CustomerId and AssetId cannot be provided together!",
+    );
+  }
 
-  const total = await prisma.waterReport.count({
-    where: whereConditions,
-  });
+  const { page, limit, skip, sortBy, sortOrder } =
+    PaginationHelper.calculatePagination(options);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const whereClause: any = {
+    AND: [
+      companyId ? { companyId } : {},
+      customerId ? { customerId } : {},
+      assetId ? { assetId } : {},
+    ],
+  };
+
+  if (searchTerm) {
+    whereClause.OR = [
+      { customer: { name: { contains: searchTerm, mode: "insensitive" } } },
+      { originalFilename: { contains: searchTerm, mode: "insensitive" } },
+      { sampleLocation: { contains: searchTerm, mode: "insensitive" } },
+      { aiReportId: { contains: searchTerm, mode: "insensitive" } },
+    ];
+  }
+
+  const [total, reports] = await Promise.all([
+    prisma.waterReport.count({ where: whereClause }),
+    prisma.waterReport.findMany({
+      where: whereClause,
+      orderBy: sortBy ? { [sortBy]: sortOrder } : { createdAt: "desc" },
+      skip,
+      take: limit,
+      include: {
+        asset: { select: { name: true, type: true, towerType: true } },
+        customer: { select: { id: true, name: true, siteName: true } },
+        company: { select: { id: true, name: true } },
+      },
+    }),
+  ]);
 
   return {
-    meta: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
-    data: formattedReports,
+    meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    data: reports.map((r) => ({
+      id: r.id,
+      aiReportId: r.aiReportId,
+      originalFilename: r.originalFilename,
+      sampleLocation: r.sampleLocation,
+      sampleDate: r.sampleDate,
+      assetId: r.assetId,
+      assetName: r.asset?.name,
+      customerId: r.customerId,
+      customerName: r.customer?.name,
+      customerSiteName: r.customer?.siteName,
+      companyId: r.companyId,
+      companyName: r.company?.name,
+      createdAt: r.createdAt,
+    })),
   };
 };
 
 const getSingleWaterReport = async (payload: { reportId: string }) => {
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(payload.reportId);
+
   const report = await prisma.waterReport.findUnique({
-    where: {
-      id: payload.reportId,
-    },
+    where: isObjectId
+      ? { id: payload.reportId }
+      : { aiReportId: payload.reportId },
     include: {
-      asset: true,
-      customer: true,
+      asset: {
+        select: {
+          name: true,
+          type: true,
+          towerType: true,
+          fillType: true,
+        },
+      },
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          contactEmail: true,
+          contactPerson: true,
+          contactPhone: true,
+        },
+      },
     },
   });
 
@@ -323,15 +400,17 @@ const createSaturationAnalysis = async (payload: {
     include: { customer: true },
   });
 
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(waterReportId);
+
   const waterReport = await prisma.waterReport.findUnique({
-    where: { id: waterReportId },
+    where: isObjectId ? { id: waterReportId } : { aiReportId: waterReportId },
   });
 
   if (!asset || !waterReport) {
     throw new AppError(status.NOT_FOUND, "Asset or Water Report not found!");
   }
 
-  // 2. Map Asset Data for defaults (if not in inputConfig)
+  // 2. Extract Data from Asset Models
   const cocData = asset?.controlVariablesAndTargets
     ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (asset.controlVariablesAndTargets as any[]).find(
@@ -353,93 +432,143 @@ const createSaturationAnalysis = async (payload: {
       )
     : null;
 
-  const assetTreatmentData =
+  const activeProgram =
     asset?.productPrograms && Array.isArray(asset.productPrograms)
       ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (asset.productPrograms as any[])[0]
       : null;
 
-  // 3. Construct AI Payload (Merging report chemical data + asset operational data)
-  const aiPayload = {
-    salt_id: inputConfig.salt_id || "Calcite",
-    treatment_id:
-      inputConfig.treatment_id || assetTreatmentData?.productId || "HEDP",
-    dosage_ppm:
-      inputConfig.dosage_ppm ||
-      (assetTreatmentData?.dosage
-        ? parseFloat(assetTreatmentData.dosage)
-        : 2.0),
-    coc_min: inputConfig.coc_min || cocData?.minValue || 1,
-    coc_max: inputConfig.coc_max || cocData?.maxValue || 10,
-    coc_interval: inputConfig.coc_interval || 1,
-    temp_min: inputConfig.temp_min || tempData?.minValue || 110,
-    temp_max: inputConfig.temp_max || tempData?.maxValue || 160,
-    temp_interval: inputConfig.temp_interval || 10,
-    temp_unit: inputConfig.temp_unit || tempData?.unit || "F",
-    ph_mode: inputConfig.ph_mode || "fixed",
-    fixed_ph:
-      inputConfig.fixed_ph || phData?.maxValue || phData?.minValue || 8.2,
-    adjustment_chemical: inputConfig.adjustment_chemical || "H2SO4",
-    balance_cation: inputConfig.balance_cation || "Na",
-    balance_anion: inputConfig.balance_anion || "Cl",
+  // 3. Resolve Treatment Chemistry
+  // Priority: body.treatment.productId > body.treatment.rawMaterialId > asset activeProgram.productId
+  let productSnapshot = null;
+  let rawMaterialSnapshot = null;
 
-    // Base water parameters from chemical snapshot
+  const targetProductId =
+    treatment?.productId || activeProgram?.productId || null;
+
+  const targetRawMaterialId = treatment?.rawMaterialId || null;
+
+  // Fetch full Product (with its blend of rawMaterials snapshot)
+  if (targetProductId && /^[0-9a-fA-F]{24}$/.test(targetProductId)) {
+    productSnapshot = await prisma.product.findUnique({
+      where: { id: targetProductId },
+    });
+  }
+
+  // Fetch specific RawMaterial (for single-component or override simulation)
+  if (targetRawMaterialId && /^[0-9a-fA-F]{24}$/.test(targetRawMaterialId)) {
+    rawMaterialSnapshot = await prisma.rawMaterial.findUnique({
+      where: { id: targetRawMaterialId },
+    });
+  }
+
+  // Resolve dosage: explicit override > asset program dosage > default
+  const resolvedDosage =
+    inputConfig?.dosage_ppm ??
+    treatment?.dosage ??
+    (activeProgram?.dosage ? parseFloat(activeProgram.dosage) : 2.0);
+
+  // 4. Construct AI Payload — no backend calculations, pass all raw data to AI
+  const aiPayload = {
+    // === Primary salt to visualize (AI calculates all salts regardless) ===
+    salt_id: inputConfig?.salt_id ?? null,
+    // === Salts of Interest to calculate ===
+    salts_of_interest: inputConfig?.salts_of_interest ?? null,
+
+    // === Operational control ranges (from Asset or body override) ===
+    dosage_ppm: resolvedDosage,
+    coc_min: inputConfig?.coc_min ?? cocData?.minValue ?? 1,
+    coc_max: inputConfig?.coc_max ?? cocData?.maxValue ?? 10,
+    coc_interval: inputConfig?.coc_interval ?? 1,
+    temp_min: inputConfig?.temp_min ?? tempData?.minValue ?? 110,
+    temp_max: inputConfig?.temp_max ?? tempData?.maxValue ?? 160,
+    temp_interval: inputConfig?.temp_interval ?? 10,
+    temp_unit: inputConfig?.temp_unit ?? tempData?.unit ?? "F",
+
+    // === pH mode: 'fixed' (user-specified value) or 'natural' (from water analysis) ===
+    ph_mode: inputConfig?.ph_mode ?? "fixed",
+    fixed_ph:
+      inputConfig?.fixed_ph ?? phData?.maxValue ?? phData?.minValue ?? 8.2,
+
+    // === Charge balance adjustment (anion/cation to balance within +/-5%) ===
+    adjustment_chemical: inputConfig?.adjustment_chemical ?? "H2SO4",
+    balance_cation: inputConfig?.balance_cation ?? "Na",
+    balance_anion: inputConfig?.balance_anion ?? "Cl",
+
+    // === Base water chemistry (from WaterReport OCR/AI extraction) ===
     base_water_parameters: waterReport.extractedParameters,
 
-    // Additional asset context
+    // === Product blend snapshot (multi-component treatment) ===
+    // Contains: [{ rawId, percentage, nameSnapshot, costSnapshot }]
+    product_blend: productSnapshot
+      ? {
+          productId: productSnapshot.id,
+          productName: productSnapshot.productName,
+          waterPercentage: productSnapshot.waterPercentage,
+          rawMaterials: productSnapshot.rawMaterials,
+        }
+      : null,
+
+    // === Single raw material snapshot (pure-component or override simulation) ===
+    // inhibitionFormulas: used by AI to determine saturation inhibition performance per salt
+    // bandUpperCushion / bandLowerCushion: used by frontend to color graph Green/Yellow/Red
+    raw_material_chemistry: rawMaterialSnapshot
+      ? {
+          rawMaterialId: rawMaterialSnapshot.id,
+          commonName: rawMaterialSnapshot.commonName,
+          activeComponentName: rawMaterialSnapshot.activeComponentName,
+          activePercentage: rawMaterialSnapshot.activePercentage,
+          activePercentageChemicalFormula:
+            rawMaterialSnapshot.activePercentageChemicalFormula,
+          inhibitionFormulas: rawMaterialSnapshot.formulas,
+          // Saturation cushion bands for graph coloring (Green < upper < Yellow < lower = Red)
+          bandUpperCushion: rawMaterialSnapshot.bandUpperCushion,
+          bandLowerCushion: rawMaterialSnapshot.bandLowerCushion,
+        }
+      : null,
+
+    // === Asset operational context ===
     asset_info: {
       name: asset.name,
       type: asset.type,
       towerType: asset.towerType,
       systemVolume: asset.systemVolume,
       systemMetallurgy: asset.systemMetallurgy,
+      systemMaterials: asset.systemMaterials,
+      recirculationRate: asset.recirculationRate,
     },
   };
 
-  // 4. Run Simulation via AI
+  // 5. Run Simulation via AI
   try {
-    const aiResult = await aiClient.post("/water/batch-saturation", aiPayload);
+    return aiPayload;
 
-    // 5. Store Analysis Result in DB
-    const analysisRecord = await prisma.saturationAnalysis.create({
-      data: {
-        companyId: asset.customer.companyId,
-        customerId: asset.customerId,
-        assetId: asset.id,
-        waterReportId: waterReport.id,
-        inputConfig: inputConfig as any,
-        productId: treatment?.productId,
-        rawMaterialId: treatment?.rawMaterialId,
-        dosage: treatment?.dosage,
-        aiResponse: aiResult.data,
-        graphData: aiResult.data.graphData || aiResult.data, // Map appropriately
-        status: "DONE",
-      },
-      include: {
-        asset: true,
-        waterReport: true,
-      },
-    });
+    // const aiResult = await aiClient.post("/water/batch-saturation", aiPayload);
 
-    return analysisRecord;
+    // // 6. Store Analysis Result in DB with MERGED configuration
+    // const analysisRecord = await prisma.saturationAnalysis.create({
+    //   data: {
+    //     companyId: asset.customer.companyId,
+    //     customerId: asset.customerId,
+    //     assetId: asset.id,
+    //     waterReportId: waterReport.id,
+    //     // Save the full resolved config for historical audit
+    //     inputConfig: aiPayload as any,
+    //     productId: targetProductId,
+    //     rawMaterialId: targetRawMaterialId,
+    //     dosage: resolvedDosage,
+    //     aiResponse: aiResult.data,
+    //     graphData: aiResult.data.graphData || aiResult.data,
+    //     status: "DONE",
+    //   },
+    //   include: {
+    //     asset: true,
+    //     waterReport: true,
+    //   },
+    // });
+
+    // return analysisRecord;
   } catch (error) {
-    // Save as FAILED if possible
-    await prisma.saturationAnalysis.create({
-      data: {
-        companyId: asset.customer.companyId,
-        customerId: asset.customerId,
-        assetId: asset.id,
-        waterReportId: waterReport.id,
-        inputConfig: inputConfig as any,
-        status: "FAILED",
-        graphData: {},
-        aiResponse: {
-          error: (error as any).message,
-          detail: (error as any).response?.data,
-        },
-      },
-    });
-
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,
       "Failed to perform saturation analysis!\n" +
@@ -466,57 +595,74 @@ const getSingleSaturationAnalysis = async (payload: { id: string }) => {
 
   return result;
 };
-
+// Flexible filter: by companyId, customerId, assetId, or waterReportId (query params)
 const getSaturationAnalysesHistory = async (payload: {
-  companyId: string;
-  filters: IReportFilterRequest;
+  filters: {
+    companyId?: string;
+    customerId?: string;
+    assetId?: string;
+    waterReportId?: string;
+    searchTerm?: string;
+  };
   options: IPaginationOptions;
 }) => {
-  const { page, limit, skip, sortBy, sortOrder } =
-    PaginationHelper.calculatePagination(payload.options);
-  const { searchTerm } = payload.filters;
+  const { filters, options } = payload;
+  const { companyId, customerId, assetId, waterReportId, searchTerm } = filters;
 
-  const andConditions: Prisma.SaturationAnalysisWhereInput[] = [
-    { companyId: payload.companyId },
-  ];
-
-  if (searchTerm) {
-    andConditions.push({
-      OR: [
-        {
-          customer: {
-            name: { contains: searchTerm, mode: "insensitive" },
-          },
-        },
-        {
-          asset: {
-            name: { contains: searchTerm, mode: "insensitive" },
-          },
-        },
-      ],
-    });
+  if (!companyId && !customerId && !assetId && !waterReportId) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      "At least one of companyId, customerId, assetId, or waterReportId is required!",
+    );
   }
 
-  const whereConditions: Prisma.SaturationAnalysisWhereInput = {
-    AND: andConditions,
+  // Ensure only one of the 4 parent IDs is provided to prevent conflicting queries
+  const providedIds = [companyId, customerId, assetId, waterReportId].filter(
+    (id) => id !== undefined,
+  );
+
+  if (providedIds.length > 1) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      "Please provide only one ID filter at a time (companyId, customerId, assetId, or waterReportId)!",
+    );
+  }
+
+  const { page, limit, skip, sortBy, sortOrder } =
+    PaginationHelper.calculatePagination(options);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const whereClause: any = {
+    AND: [
+      companyId ? { companyId } : {},
+      customerId ? { customerId } : {},
+      assetId ? { assetId } : {},
+      waterReportId ? { waterReportId } : {},
+    ],
   };
 
-  const results = await prisma.saturationAnalysis.findMany({
-    where: whereConditions,
-    skip,
-    take: limit,
-    orderBy:
-      sortBy && sortOrder ? { [sortBy]: sortOrder } : { createdAt: "desc" },
-    include: {
-      asset: true,
-      customer: true,
-      waterReport: true,
-    },
-  });
+  if (searchTerm) {
+    whereClause.OR = [
+      { customer: { name: { contains: searchTerm, mode: "insensitive" } } },
+      { asset: { name: { contains: searchTerm, mode: "insensitive" } } },
+    ];
+  }
 
-  const total = await prisma.saturationAnalysis.count({
-    where: whereConditions,
-  });
+  const [total, results] = await Promise.all([
+    prisma.saturationAnalysis.count({ where: whereClause }),
+    prisma.saturationAnalysis.findMany({
+      where: whereClause,
+      skip,
+      take: limit,
+      orderBy:
+        sortBy && sortOrder ? { [sortBy]: sortOrder } : { createdAt: "desc" },
+      include: {
+        asset: true,
+        customer: true,
+        waterReport: true,
+      },
+    }),
+  ]);
 
   return {
     meta: {
@@ -527,6 +673,39 @@ const getSaturationAnalysesHistory = async (payload: {
     },
     data: results,
   };
+};
+const deleteWaterReport = async (payload: { id: string }) => {
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(payload.id);
+
+  const report = await prisma.waterReport.findUnique({
+    where: isObjectId ? { id: payload.id } : { aiReportId: payload.id },
+  });
+
+  if (!report) {
+    throw new AppError(status.NOT_FOUND, "Water Report not found!");
+  }
+
+  const result = await prisma.waterReport.delete({
+    where: { id: report.id },
+  });
+
+  return result;
+};
+
+const deleteSaturationAnalysis = async (payload: { id: string }) => {
+  const analysis = await prisma.saturationAnalysis.findUnique({
+    where: { id: payload.id },
+  });
+
+  if (!analysis) {
+    throw new AppError(status.NOT_FOUND, "Saturation Analysis not found!");
+  }
+
+  const result = await prisma.saturationAnalysis.delete({
+    where: { id: payload.id },
+  });
+
+  return result;
 };
 
 export const ReportAnalysisService = {
@@ -539,4 +718,6 @@ export const ReportAnalysisService = {
   createSaturationAnalysis,
   getSingleSaturationAnalysis,
   getSaturationAnalysesHistory,
+  deleteWaterReport,
+  deleteSaturationAnalysis,
 };

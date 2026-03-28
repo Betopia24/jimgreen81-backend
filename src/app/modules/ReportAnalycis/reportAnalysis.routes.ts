@@ -100,4 +100,11 @@ router.delete(
   ReportAnalysisController.deleteSaturationAnalysis,
 );
 
+// Company Overview Data
+router.get(
+  "/company-overview/:companyId",
+  auth(),
+  ReportAnalysisController.getCompanyOverview,
+);
+
 export const reportAnalysisRoutes = router;

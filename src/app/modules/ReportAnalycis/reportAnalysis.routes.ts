@@ -42,6 +42,13 @@ router.get(
   ReportAnalysisController.getSingleWaterReport,
 );
 
+// Delete Water Report
+router.delete(
+  "/water-reports/:id",
+  auth(),
+  ReportAnalysisController.deleteWaterReport,
+);
+
 // Actions on Water Reports
 router.post(
   "/water-reports/modify-graph",
@@ -84,6 +91,13 @@ router.get(
   "/saturation-analyses/:id",
   auth(),
   ReportAnalysisController.getSingleSaturationAnalysis,
+);
+
+// Delete Saturation Analysis
+router.delete(
+  "/saturation-analyses/:id",
+  auth(),
+  ReportAnalysisController.deleteSaturationAnalysis,
 );
 
 export const reportAnalysisRoutes = router;

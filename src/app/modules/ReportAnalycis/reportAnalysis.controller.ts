@@ -143,6 +143,30 @@ const getSaturationAnalysesHistory = catchAsync(async (req, res) => {
   });
 });
 
+const deleteWaterReport = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.deleteWaterReport({
+    id: req.params.id,
+  });
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    message: "Water Report Successfully Deleted!",
+    data: result,
+  });
+});
+
+const deleteSaturationAnalysis = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.deleteSaturationAnalysis({
+    id: req.params.id,
+  });
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    message: "Saturation Analysis Successfully Deleted!",
+    data: result,
+  });
+});
+
 export const ReportAnalysisController = {
   extractWaterReport,
   createWaterReport,
@@ -153,4 +177,6 @@ export const ReportAnalysisController = {
   createSaturationAnalysis,
   getSingleSaturationAnalysis,
   getSaturationAnalysesHistory,
+  deleteWaterReport,
+  deleteSaturationAnalysis,
 };

@@ -327,7 +327,8 @@ const getWaterReportsHistory = async (payload: {
       take: limit,
       include: {
         asset: { select: { name: true, type: true, towerType: true } },
-        customer: { select: { id: true, name: true } },
+        customer: { select: { id: true, name: true, siteName: true } },
+        company: { select: { id: true, name: true } },
       },
     }),
   ]);
@@ -340,8 +341,13 @@ const getWaterReportsHistory = async (payload: {
       originalFilename: r.originalFilename,
       sampleLocation: r.sampleLocation,
       sampleDate: r.sampleDate,
+      assetId: r.assetId,
       assetName: r.asset?.name,
+      customerId: r.customerId,
       customerName: r.customer?.name,
+      customerSiteName: r.customer?.siteName,
+      companyId: r.companyId,
+      companyName: r.company?.name,
       createdAt: r.createdAt,
     })),
   };
@@ -668,6 +674,39 @@ const getSaturationAnalysesHistory = async (payload: {
     data: results,
   };
 };
+const deleteWaterReport = async (payload: { id: string }) => {
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(payload.id);
+
+  const report = await prisma.waterReport.findUnique({
+    where: isObjectId ? { id: payload.id } : { aiReportId: payload.id },
+  });
+
+  if (!report) {
+    throw new AppError(status.NOT_FOUND, "Water Report not found!");
+  }
+
+  const result = await prisma.waterReport.delete({
+    where: { id: report.id },
+  });
+
+  return result;
+};
+
+const deleteSaturationAnalysis = async (payload: { id: string }) => {
+  const analysis = await prisma.saturationAnalysis.findUnique({
+    where: { id: payload.id },
+  });
+
+  if (!analysis) {
+    throw new AppError(status.NOT_FOUND, "Saturation Analysis not found!");
+  }
+
+  const result = await prisma.saturationAnalysis.delete({
+    where: { id: payload.id },
+  });
+
+  return result;
+};
 
 export const ReportAnalysisService = {
   extractWaterReport,
@@ -679,4 +718,6 @@ export const ReportAnalysisService = {
   createSaturationAnalysis,
   getSingleSaturationAnalysis,
   getSaturationAnalysesHistory,
+  deleteWaterReport,
+  deleteSaturationAnalysis,
 };

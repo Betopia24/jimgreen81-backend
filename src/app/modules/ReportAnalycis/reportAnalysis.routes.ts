@@ -107,4 +107,11 @@ router.get(
   ReportAnalysisController.getCompanyOverview,
 );
 
+// Available Salts
+router.get(
+  "/saturation/available-salts",
+  auth(),
+  ReportAnalysisController.getAvailableSalts,
+);
+
 export const reportAnalysisRoutes = router;

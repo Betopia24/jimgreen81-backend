@@ -179,6 +179,16 @@ const getCompanyOverview = catchAsync(async (req, res) => {
   });
 });
 
+const getAvailableSalts = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.getAvailableSalts();
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    message: "Available salts successfully retrieved!",
+    data: result,
+  });
+});
+
 export const ReportAnalysisController = {
   extractWaterReport,
   createWaterReport,
@@ -192,4 +202,5 @@ export const ReportAnalysisController = {
   deleteWaterReport,
   deleteSaturationAnalysis,
   getCompanyOverview,
+  getAvailableSalts,
 };

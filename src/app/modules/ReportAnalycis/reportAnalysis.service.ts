@@ -4,7 +4,6 @@ import AppError from "../../../errors/AppError";
 import { aiClient } from "../../../config/aiClient";
 import prisma from "../../../db/prisma";
 import {
-  IReportFilterRequest,
   TModifyReportGraphInput,
   TRecalculateReportInput,
   TSaturationAnalysisInput,
@@ -18,7 +17,6 @@ import {
   IPaginationOptions,
   PaginationHelper,
 } from "../../../helpers/pagination";
-import { Prisma } from "@prisma/client";
 
 const extractWaterReport = async (payload: { file: Express.Multer.File }) => {
   if (!payload.file) {
@@ -389,6 +387,24 @@ const getSingleWaterReport = async (payload: { reportId: string }) => {
   return report;
 };
 
+const deleteWaterReport = async (payload: { id: string }) => {
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(payload.id);
+
+  const report = await prisma.waterReport.findUnique({
+    where: isObjectId ? { id: payload.id } : { aiReportId: payload.id },
+  });
+
+  if (!report) {
+    throw new AppError(status.NOT_FOUND, "Water Report not found!");
+  }
+
+  const result = await prisma.waterReport.delete({
+    where: { id: report.id },
+  });
+
+  return result;
+};
+
 const createSaturationAnalysis = async (payload: {
   data: TSaturationAnalysisInput;
 }) => {
@@ -541,33 +557,29 @@ const createSaturationAnalysis = async (payload: {
 
   // 5. Run Simulation via AI
   try {
-    return aiPayload;
+    const aiResult = await aiClient.post("/saturation/run-analysis", aiPayload);
 
-    // const aiResult = await aiClient.post("/water/batch-saturation", aiPayload);
+    const aiData = aiResult.data.data;
 
-    // // 6. Store Analysis Result in DB with MERGED configuration
-    // const analysisRecord = await prisma.saturationAnalysis.create({
-    //   data: {
-    //     companyId: asset.customer.companyId,
-    //     customerId: asset.customerId,
-    //     assetId: asset.id,
-    //     waterReportId: waterReport.id,
-    //     // Save the full resolved config for historical audit
-    //     inputConfig: aiPayload as any,
-    //     productId: targetProductId,
-    //     rawMaterialId: targetRawMaterialId,
-    //     dosage: resolvedDosage,
-    //     aiResponse: aiResult.data,
-    //     graphData: aiResult.data.graphData || aiResult.data,
-    //     status: "DONE",
-    //   },
-    //   include: {
-    //     asset: true,
-    //     waterReport: true,
-    //   },
-    // });
+    // 6. Store Analysis Result in DB with MERGED configuration
+    const analysisRecord = await prisma.saturationAnalysis.create({
+      data: {
+        companyId: asset.customer.companyId,
+        customerId: asset.customerId,
+        assetId: asset.id,
+        waterReportId: waterReport.id,
+        // Save the full resolved config for historical audit
+        inputConfig: aiPayload as any,
+        productId: targetProductId,
+        rawMaterialId: targetRawMaterialId,
+        dosage: resolvedDosage,
+        aiResponse: aiData,
+        graphData: aiData.graph_data,
+        summary: aiData.summary || {},
+      },
+    });
 
-    // return analysisRecord;
+    return analysisRecord;
   } catch (error) {
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,
@@ -579,22 +591,6 @@ const createSaturationAnalysis = async (payload: {
   }
 };
 
-const getSingleSaturationAnalysis = async (payload: { id: string }) => {
-  const result = await prisma.saturationAnalysis.findUnique({
-    where: { id: payload.id },
-    include: {
-      waterReport: true,
-      asset: true,
-      customer: true,
-    },
-  });
-
-  if (!result) {
-    throw new AppError(status.NOT_FOUND, "Saturation Analysis not found!");
-  }
-
-  return result;
-};
 // Flexible filter: by companyId, customerId, assetId, or waterReportId (query params)
 const getSaturationAnalysesHistory = async (payload: {
   filters: {
@@ -656,10 +652,27 @@ const getSaturationAnalysesHistory = async (payload: {
       take: limit,
       orderBy:
         sortBy && sortOrder ? { [sortBy]: sortOrder } : { createdAt: "desc" },
-      include: {
-        asset: true,
-        customer: true,
-        waterReport: true,
+      select: {
+        id: true,
+        companyId: true,
+        customerId: true,
+        assetId: true,
+        waterReportId: true,
+        productId: true,
+        rawMaterialId: true,
+        dosage: true,
+        aiResponse: true,
+        createdAt: true,
+        updatedAt: true,
+        waterReport: {
+          select: {
+            id: true,
+            aiReportId: true,
+            originalFilename: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
       },
     }),
   ]);
@@ -674,20 +687,59 @@ const getSaturationAnalysesHistory = async (payload: {
     data: results,
   };
 };
-const deleteWaterReport = async (payload: { id: string }) => {
-  const isObjectId = /^[0-9a-fA-F]{24}$/.test(payload.id);
 
-  const report = await prisma.waterReport.findUnique({
-    where: isObjectId ? { id: payload.id } : { aiReportId: payload.id },
+const getSingleSaturationAnalysis = async (payload: { id: string }) => {
+  const result = await prisma.saturationAnalysis.findUnique({
+    where: { id: payload.id },
+    select: {
+      id: true,
+      companyId: true,
+      customerId: true,
+      assetId: true,
+      waterReportId: true,
+      productId: true,
+      rawMaterialId: true,
+      dosage: true,
+      aiResponse: true,
+      createdAt: true,
+      updatedAt: true,
+
+      asset: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          towerType: true,
+          systemVolume: true,
+          systemMetallurgy: true,
+          systemMaterials: true,
+          recirculationRate: true,
+        },
+      },
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          siteName: true,
+          location: true,
+          address: true,
+        },
+      },
+      waterReport: {
+        select: {
+          id: true,
+          aiReportId: true,
+          originalFilename: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
+    },
   });
 
-  if (!report) {
-    throw new AppError(status.NOT_FOUND, "Water Report not found!");
+  if (!result) {
+    throw new AppError(status.NOT_FOUND, "Saturation Analysis not found!");
   }
-
-  const result = await prisma.waterReport.delete({
-    where: { id: report.id },
-  });
 
   return result;
 };
@@ -765,6 +817,21 @@ const getCompanyOverview = async (payload: { companyId: string }) => {
   return { customers };
 };
 
+const getAvailableSalts = async () => {
+  try {
+    const aiResult = await aiClient.get("/saturation/available-salts");
+    return aiResult.data.salts;
+  } catch (error) {
+    throw new AppError(
+      status.INTERNAL_SERVER_ERROR,
+      "Failed to fetch available salts from AI engine!\n" +
+        " " +
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ((error as any).response?.data?.detail || (error as any).message),
+    );
+  }
+};
+
 export const ReportAnalysisService = {
   extractWaterReport,
   createWaterReport,
@@ -778,4 +845,5 @@ export const ReportAnalysisService = {
   deleteWaterReport,
   deleteSaturationAnalysis,
   getCompanyOverview,
+  getAvailableSalts,
 };

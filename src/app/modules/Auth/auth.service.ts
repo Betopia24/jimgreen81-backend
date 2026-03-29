@@ -26,6 +26,7 @@ export class AuthService {
   static createAccount = async (payload: { data: TCreateUser }) => {
     const { data } = payload;
     data.email = data.email.toLowerCase().trim();
+    data.companyEmail = data.companyEmail?.toLowerCase().trim() ?? undefined;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -41,7 +42,7 @@ export class AuthService {
     // Check company email already exists
     if (data.companyEmail) {
       const companyEmailExist = await prisma.company.findUnique({
-        where: { email: data.email },
+        where: { email: data.companyEmail },
       });
       if (companyEmailExist) {
         throw new AppError(

@@ -72,32 +72,41 @@ const createWaterReport = async (payload: {
   try {
     // Call AI for professional insights (Industrial Grade Score, Risks, etc.)
     const aiResult = await aiClient.post("/water/analyze-data", {
-      parameters,
+      parameters: parameters,
       sample_location: sampleLocation,
       sample_date: sampleDate,
     });
 
     const result = aiResult.data;
 
-    const reportResult = await prisma.waterReport.create({
-      data: {
-        originalFilename: rest.filename,
-        assetId,
-        customerId: asset.customerId,
-        companyId: asset.customer.companyId,
-        sampleLocation: sampleLocation,
-        sampleDate: sampleDate,
-        aiReportId: result.report_id, // Save AI persistent ID
-        // AI Insights
-        extractedParameters: result.extracted_parameters,
-        parameterGraph: result.parameter_graph,
-        chemicalStatus: result.chemical_status,
-        totalScore: result.total_score,
-        qualityReport: result.quality_report,
-        chemicalComposition: result.chemical_composition,
-        biologicalIndicators: result.biological_indicators,
-        complianceChecklist: result.compliance_checklist,
-        contaminationRisk: result.contamination_risk,
+    const updateData = {
+      originalFilename: rest.filename,
+      assetId,
+      customerId: asset.customerId,
+      companyId: asset.customer.companyId,
+      sampleLocation: sampleLocation,
+      sampleDate: sampleDate,
+      extractedParameters: result.extracted_parameters,
+      parameterGraph: result.parameter_graph,
+      chemicalStatus: result.chemical_status,
+      totalScore: result.total_score,
+      qualityReport: result.quality_report,
+      chemicalComposition: result.chemical_composition,
+      biologicalIndicators: result.biological_indicators,
+      complianceChecklist: result.compliance_checklist,
+      contaminationRisk: result.contamination_risk,
+    };
+
+    const reportResult = await prisma.waterReport.upsert({
+      where: {
+        aiReportId: result.report_id,
+      },
+      update: {
+        ...updateData,
+      },
+      create: {
+        aiReportId: result.report_id,
+        ...updateData,
       },
       include: {
         asset: true,

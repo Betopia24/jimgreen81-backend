@@ -112,7 +112,7 @@ model CompanyMember {
   status          MemberStatus @default(active)
 
   user            User         @relation(fields: [id], references: [id],onDelete: Cascade)
-  company         Company      @relation(fields: [companyId], references: [id],onDelete: Cascade)
+  company         Company?      @relation(fields: [companyId], references: [id],onDelete: Cascade)
 
   @@map("company_members")
 }

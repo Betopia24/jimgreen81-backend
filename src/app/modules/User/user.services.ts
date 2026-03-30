@@ -48,7 +48,7 @@ export const UserService = {
     if (!userInfo) throw new AppError(httpStatus.NOT_FOUND, "User not Found!");
 
     const activeSubscription = await activeSubscriptionInformation(
-      userInfo.companyMember?.company.id,
+      userInfo.companyMember?.company?.id,
     );
 
     return { ...userInfo, activeSubscription };
@@ -350,6 +350,8 @@ export const UserService = {
 };
 
 export const activeSubscriptionInformation = async (companyId?: string) => {
+  if (!companyId) return null;
+
   const activeSubscription = await prisma.subscription.findFirst({
     where: {
       companyId: companyId,

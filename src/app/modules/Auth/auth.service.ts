@@ -211,7 +211,7 @@ export class AuthService {
     const tokens = this.getLoginTokens({ id: user.id, role: user.role });
 
     const activeSubscription = await activeSubscriptionInformation(
-      restUserResult.companyMember?.company.id,
+      restUserResult.companyMember?.company?.id,
     );
 
     return { ...tokens, user: { ...restUserResult, activeSubscription } };
@@ -274,7 +274,7 @@ export class AuthService {
       });
 
       const activeSubscription = await activeSubscriptionInformation(
-        restUserResult.companyMember?.company.id,
+        restUserResult.companyMember?.company?.id,
       );
 
       return { ...tokens, user: { ...restUserResult, activeSubscription } };
@@ -322,7 +322,7 @@ export class AuthService {
     const tokens = this.getLoginTokens({ id: user.id, role: user.role });
 
     const activeSubscription = await activeSubscriptionInformation(
-      restUserResult.companyMember?.company.id,
+      restUserResult.companyMember?.company?.id,
     );
 
     return { ...tokens, user: { ...restUserResult, activeSubscription } };

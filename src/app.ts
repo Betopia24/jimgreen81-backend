@@ -35,6 +35,8 @@ class App {
           "http://206.162.244.131:3017",
           "http://16.170.169.205:3008",
           "http://16.170.169.205:3017",
+          "https://aquaadvisor.ai",
+          "https://admin.aquaadvisor.ai",
         ],
         credentials: true,
         methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],

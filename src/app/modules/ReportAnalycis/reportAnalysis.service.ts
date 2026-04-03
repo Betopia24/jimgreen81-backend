@@ -419,13 +419,7 @@ const deleteWaterReport = async (payload: { id: string }) => {
 const createSaturationAnalysis = async (payload: {
   data: TSaturationAnalysisInput;
 }) => {
-  const { name, assetId, waterReportId, inputConfig, treatment } = payload.data;
-
-  // 1. Fetch required context
-  const asset = await prisma.asset.findUnique({
-    where: { id: assetId },
-    include: { customer: true },
-  });
+  const { name, waterReportId, inputConfig, treatment } = payload.data;
 
   const isObjectId = /^[0-9a-fA-F]{24}$/.test(waterReportId);
 
@@ -433,8 +427,18 @@ const createSaturationAnalysis = async (payload: {
     where: isObjectId ? { id: waterReportId } : { aiReportId: waterReportId },
   });
 
-  if (!asset || !waterReport) {
-    throw new AppError(status.NOT_FOUND, "Asset or Water Report not found!");
+  if (!waterReport) {
+    throw new AppError(status.NOT_FOUND, "Water Report not found!");
+  }
+
+  // 1. Fetch required context
+  const asset = await prisma.asset.findUnique({
+    where: { id: waterReport.assetId },
+    include: { customer: true },
+  });
+
+  if (!asset) {
+    throw new AppError(status.NOT_FOUND, "Asset not found!");
   }
 
   // 2. Extract Data from Asset Models

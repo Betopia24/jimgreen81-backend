@@ -34,7 +34,6 @@ export const ReportAnalysisValidationSchema = {
 
   saturationAnalysis: z.object({
     name: z.string({ required_error: "name is required" }).nonempty(),
-    assetId: z.string({ required_error: "assetId is required" }).nonempty(),
     waterReportId: z
       .string({ required_error: "waterReportId is required" })
       .nonempty(),

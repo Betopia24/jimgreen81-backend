@@ -15,18 +15,26 @@ jobs:
         with:
           host: ${{ secrets.HOST_IP }}
           username: ${{ secrets.USER }} # ubuntu
-          key: ${{ secrets.SSH_KEY }} # your .pem content
+          key: ${{ secrets.SSH_KEY }} # .pem content
           script: |
             set -e
 
-            echo "🔹 Load NVM"
-            export NVM_DIR="/root/.nvm"
+            echo "🔹 Load NVM (FIXED PATH)"
+            export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+            echo "🔹 Use correct Node version"
+            nvm use 24 || nvm install 24
+
+            echo "🔹 Debug Node"
+            node -v
+            npm -v
 
             echo "🔹 Go to project directory"
             cd /var/www/jimgreen81-backend
 
-            echo "🔹 Reset repo to avoid conflicts"
+            echo "🔹 Reset repo (NO CONFLICT EVER)"
             git fetch origin
             git reset --hard origin/main
 
@@ -36,8 +44,18 @@ jobs:
             echo "🔹 Build project"
             npm run build
 
-            echo "🔹 Restart PM2 (zero downtime)"
-            /root/.nvm/versions/node/v24.13.0/bin/pm2 reload jimgreen81-backend || \
-            /root/.nvm/versions/node/v24.13.0/bin/pm2 start dist/index.js --name jimgreen81-backend
+            echo "🔹 Restart PM2 (SMART WAY)"
+
+            # Try reload first (zero downtime)
+            pm2 reload jimgreen81-backend && echo "Reload success" || {
+
+              echo "⚠️ PM2 app not found, starting new one..."
+
+              # Start using npm script (your requirement)
+              pm2 start npm --name "jimgreen81-backend" -- run start
+            }
+
+            echo "🔹 Save PM2 process"
+            pm2 save
 
             echo "✅ Deployment Successful!"

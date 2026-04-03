@@ -264,6 +264,8 @@ model WaterReport {
   customerId             String   @db.ObjectId
   companyId              String   @db.ObjectId
 
+  name                   String
+
   sampleLocation         String?
   sampleDate             String?
   originalFilename       String?
@@ -300,18 +302,17 @@ model SaturationAnalysis {
   assetId         String   @db.ObjectId
   waterReportId   String   @db.ObjectId
 
+  name            String
+
   // INPUT CONFIG
   inputConfig     Json     // coc, temp, pH, salt, etc.
 
   // Selected treatment
   productId       String?  @db.ObjectId
   rawMaterialId   String?  @db.ObjectId
-  dosage          Float?
 
   // AI RESPONSE (IMPORTANT)
   aiResponse      Json     // full AI output
-  graphData       Json     // optimized for frontend
-  summary         Json?    // optional insights
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

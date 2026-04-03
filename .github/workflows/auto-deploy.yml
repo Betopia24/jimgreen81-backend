@@ -1,0 +1,43 @@
+name: CI/CD Deploy to EC2 (PM2)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚀 Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST_IP }}
+          username: ${{ secrets.USER }} # ubuntu
+          key: ${{ secrets.SSH_KEY }} # your .pem content
+          script: |
+            set -e
+
+            echo "🔹 Load NVM"
+            export NVM_DIR="/root/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            echo "🔹 Go to project directory"
+            cd /var/www/jimgreen81-backend
+
+            echo "🔹 Reset repo to avoid conflicts"
+            git fetch origin
+            git reset --hard origin/main
+
+            echo "🔹 Install dependencies"
+            npm ci
+
+            echo "🔹 Build project"
+            npm run build
+
+            echo "🔹 Restart PM2 (zero downtime)"
+            /root/.nvm/versions/node/v24.13.0/bin/pm2 reload jimgreen81-backend || \
+            /root/.nvm/versions/node/v24.13.0/bin/pm2 start dist/index.js --name jimgreen81-backend
+
+            echo "✅ Deployment Successful!"

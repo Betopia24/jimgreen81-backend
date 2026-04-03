@@ -56,7 +56,7 @@ const extractWaterReport = async (payload: { file: Express.Multer.File }) => {
 const createWaterReport = async (payload: {
   data: TCreateWaterReportInput;
 }) => {
-  const { assetId, sampleLocation, sampleDate, ...rest } = payload.data;
+  const { name, assetId, sampleLocation, sampleDate, ...rest } = payload.data;
 
   const asset = await prisma.asset.findUnique({
     where: { id: assetId },
@@ -80,6 +80,7 @@ const createWaterReport = async (payload: {
     const result = aiResult.data;
 
     const updateData = {
+      name,
       originalFilename: rest.filename,
       assetId,
       customerId: asset.customerId,
@@ -345,6 +346,7 @@ const getWaterReportsHistory = async (payload: {
     data: reports.map((r) => ({
       id: r.id,
       aiReportId: r.aiReportId,
+      name: r.name,
       originalFilename: r.originalFilename,
       sampleLocation: r.sampleLocation,
       sampleDate: r.sampleDate,
@@ -417,7 +419,7 @@ const deleteWaterReport = async (payload: { id: string }) => {
 const createSaturationAnalysis = async (payload: {
   data: TSaturationAnalysisInput;
 }) => {
-  const { assetId, waterReportId, inputConfig, treatment } = payload.data;
+  const { name, assetId, waterReportId, inputConfig, treatment } = payload.data;
 
   // 1. Fetch required context
   const asset = await prisma.asset.findUnique({
@@ -560,6 +562,10 @@ const createSaturationAnalysis = async (payload: {
       systemVolume: asset.systemVolume,
       systemMetallurgy: asset.systemMetallurgy,
       systemMaterials: asset.systemMaterials,
+      supplyTemperature: asset.supplyTemperature,
+      supplyTemperatureType: asset.supplyTemperatureType,
+      returnTemperature: asset.returnTemperature,
+      returnTemperatureType: asset.returnTemperatureType,
       recirculationRate: asset.recirculationRate,
     },
   };
@@ -577,14 +583,33 @@ const createSaturationAnalysis = async (payload: {
         customerId: asset.customerId,
         assetId: asset.id,
         waterReportId: waterReport.id,
+        name: name,
         // Save the full resolved config for historical audit
         inputConfig: aiPayload as any,
         productId: targetProductId,
         rawMaterialId: targetRawMaterialId,
-        dosage: resolvedDosage,
         aiResponse: aiData,
-        graphData: aiData.graph_data,
-        summary: aiData.summary || {},
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            siteName: true,
+            location: true,
+            address: true,
+          },
+        },
+        waterReport: {
+          select: {
+            id: true,
+            aiReportId: true,
+            name: true,
+            originalFilename: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
       },
     });
 
@@ -666,10 +691,10 @@ const getSaturationAnalysesHistory = async (payload: {
         companyId: true,
         customerId: true,
         assetId: true,
+        name: true,
         waterReportId: true,
         productId: true,
         rawMaterialId: true,
-        dosage: true,
         aiResponse: true,
         createdAt: true,
         updatedAt: true,
@@ -677,9 +702,20 @@ const getSaturationAnalysesHistory = async (payload: {
           select: {
             id: true,
             aiReportId: true,
+            name: true,
             originalFilename: true,
             createdAt: true,
             updatedAt: true,
+          },
+        },
+
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            siteName: true,
+            location: true,
+            address: true,
           },
         },
       },
@@ -708,23 +744,10 @@ const getSingleSaturationAnalysis = async (payload: { id: string }) => {
       waterReportId: true,
       productId: true,
       rawMaterialId: true,
-      dosage: true,
       aiResponse: true,
       createdAt: true,
       updatedAt: true,
 
-      asset: {
-        select: {
-          id: true,
-          name: true,
-          type: true,
-          towerType: true,
-          systemVolume: true,
-          systemMetallurgy: true,
-          systemMaterials: true,
-          recirculationRate: true,
-        },
-      },
       customer: {
         select: {
           id: true,
@@ -734,10 +757,22 @@ const getSingleSaturationAnalysis = async (payload: { id: string }) => {
           address: true,
         },
       },
+
+      asset: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          towerType: true,
+          fillType: true,
+        },
+      },
+
       waterReport: {
         select: {
           id: true,
           aiReportId: true,
+          name: true,
           originalFilename: true,
           createdAt: true,
           updatedAt: true,
@@ -807,6 +842,7 @@ const getCompanyOverview = async (payload: { companyId: string }) => {
               aiReportId: true,
               sampleDate: true,
               sampleLocation: true,
+              name: true,
               originalFilename: true,
               assetId: true,
               customerId: true,

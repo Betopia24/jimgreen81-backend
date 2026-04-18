@@ -1,0 +1,49 @@
+SOLUTION_SPREAD 1
+    -units    mg/l
+ Alkalinity	       Ca	 Cl	       Mg	 Na	      P	      Si	      S	 pH	Temp
+  as CaCO3	 as CaCO3	   	 as CaCO3	   	 as PO4	 as SiO2	 as SO4	   	
+         20	      50	 20	      25	 10	    0.1	      10	     20		55
+         40	      100	 40	      50	 20	    0.2	      20	     40		55
+         60	      150	 60	      75	 30	    0.3	      30	     60		55
+         80	      200	 80	      100	 40	    0.4	      40	     80		55
+         100	      250	 100	      125	 50	    0.5	      50	     100		55
+         120	      300	 120	      150	 60	    0.6	      60	     120	   	55
+         140	      350	 140	      175	 70	    0.7	      70	     140	   	55
+         160	      400	 160	      200	 80	    0.8	      80	     160	   	55
+         180	      450	 180	      225	 90	    0.9	      90	     180	   	55
+         200	      500	 200	      250	 100	    1.0	      100	     200	   	55
+
+
+EQUILIBRIUM_PHASES 1-10
+    CO2(g) -3.4 10.0
+
+USE solution 1
+USE equilibrium_phases 1
+END
+USE solution 2
+USE equilibrium_phases 2
+END
+USE solution 3
+USE equilibrium_phases 3
+END
+USE solution 4
+USE equilibrium_phases 4
+END
+USE solution 5
+USE equilibrium_phases 5
+END
+USE solution 6
+USE equilibrium_phases 6
+END
+USE solution 7
+USE equilibrium_phases 7
+END
+USE solution 8
+USE equilibrium_phases 8
+END
+USE solution 9
+USE equilibrium_phases 9
+END
+USE solution 10
+USE equilibrium_phases 10
+END

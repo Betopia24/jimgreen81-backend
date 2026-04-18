@@ -53,6 +53,10 @@ export const ReportAnalysisValidationSchema = {
         temp_unit: z.enum(["F", "C"]).optional(),
         ph_mode: z.enum(["fixed", "natural"]).optional(),
         fixed_ph: z.number().optional(),
+        // CO2 log partial pressure for EQUILIBRIUM_PHASES block (natural pH mode only)
+        // PHREEQC uses: CO2(g) <co2_log_partial_pressure> 10.0
+        // Atmospheric CO2 default is -3.4 (approx 0.0004 atm)
+        co2_log_partial_pressure: z.number().optional(),
         adjustment_chemical: z.string().optional(),
         balance_cation: z.string().optional(),
         balance_anion: z.string().optional(),
@@ -64,6 +68,12 @@ export const ReportAnalysisValidationSchema = {
         rawMaterialId: z.string().optional(),
         dosage: z.number().optional(),
       })
-      .optional(),
+      .optional()
+      .refine(
+        (t) => !t || !(t.productId && t.rawMaterialId),
+        {
+          message: "Provide either productId or rawMaterialId, not both",
+        },
+      ),
   }),
 };

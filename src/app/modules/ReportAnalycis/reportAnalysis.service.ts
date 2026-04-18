@@ -431,6 +431,14 @@ const createSaturationAnalysis = async (payload: {
     throw new AppError(status.NOT_FOUND, "Water Report not found!");
   }
 
+  // Fix 1: Guard against missing extractedParameters — AI server needs this to run PHREEQC
+  if (!waterReport.extractedParameters) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      "Water Report has no extracted parameters. Please re-process the report before running saturation analysis.",
+    );
+  }
+
   // 1. Fetch required context
   const asset = await prisma.asset.findUnique({
     where: { id: waterReport.assetId },
@@ -463,41 +471,100 @@ const createSaturationAnalysis = async (payload: {
       )
     : null;
 
+  // Fix 5: Prefer a program marked isPrimary, fall back to first entry
   const activeProgram =
     asset?.productPrograms && Array.isArray(asset.productPrograms)
       ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (asset.productPrograms as any[])[0]
+        ((asset.productPrograms as any[]).find((p: any) => p.isPrimary) ??
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (asset.productPrograms as any[])[0])
       : null;
 
   // 3. Resolve Treatment Chemistry
-  // Priority: body.treatment.productId > body.treatment.rawMaterialId > asset activeProgram.productId
+  // Case A: body provides productId  → product_blend only
+  // Case B: body provides rawMaterialId → raw_material_chemistry only
+  // Case C: nothing provided → fall back to asset productPrograms[active].productId → product_blend + raw_material_chemistry
   let productSnapshot = null;
   let rawMaterialSnapshot = null;
 
-  const targetProductId =
-    treatment?.productId || activeProgram?.productId || null;
+  const bodyProductId = treatment?.productId || null;
+  const bodyRawMaterialId = treatment?.rawMaterialId || null;
 
-  const targetRawMaterialId = treatment?.rawMaterialId || null;
+  // Resolve which product to use: body > asset activeProgram
+  // Only used when body did NOT provide a rawMaterialId directly
+  const targetProductId = bodyRawMaterialId
+    ? null // rawMaterialId takes full priority — no product needed
+    : bodyProductId || activeProgram?.productId || null;
 
-  // Fetch full Product (with its blend of rawMaterials snapshot)
+  const targetRawMaterialId = bodyRawMaterialId || null;
+
+  // Fetch Product and enrich its rawMaterials with full inhibition chemistry
+  let enrichedProductRawMaterials = null;
   if (targetProductId && /^[0-9a-fA-F]{24}$/.test(targetProductId)) {
     productSnapshot = await prisma.product.findUnique({
       where: { id: targetProductId },
     });
   }
 
-  // Fetch specific RawMaterial (for single-component or override simulation)
+  if (productSnapshot && Array.isArray(productSnapshot.rawMaterials)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const blendEntries = productSnapshot.rawMaterials as any[];
+    const rawIds = blendEntries.map((r) => r.rawId).filter(Boolean);
+
+    const fullRaws = rawIds.length
+      ? await prisma.rawMaterial.findMany({ where: { id: { in: rawIds } } })
+      : [];
+
+    const rawMap = new Map(fullRaws.map((r) => [r.id, r]));
+
+    enrichedProductRawMaterials = blendEntries.map((entry) => {
+      const full = rawMap.get(entry.rawId);
+      return {
+        rawId: entry.rawId,
+        percentage: entry.percentage,
+        nameSnapshot: entry.nameSnapshot,
+        costSnapshot: entry.costSnapshot,
+        activeComponentName: full?.activeComponentName ?? null,
+        activePercentage: full?.activePercentage ?? null,
+        activePercentageChemicalFormula:
+          full?.activePercentageChemicalFormula ?? null,
+        inhibitionFormulas: full?.formulas ?? [],
+      };
+    });
+  }
+
+  // Fetch RawMaterial:
+  // - body rawMaterialId → direct fetch
+  // - no body rawMaterialId + product resolved from asset → use first raw material from product blend
+  //   (asset productPrograms has no rawMaterialId field, so we derive it from the product)
   if (targetRawMaterialId && /^[0-9a-fA-F]{24}$/.test(targetRawMaterialId)) {
     rawMaterialSnapshot = await prisma.rawMaterial.findUnique({
       where: { id: targetRawMaterialId },
     });
+  } else if (
+    !bodyProductId &&
+    !bodyRawMaterialId &&
+    enrichedProductRawMaterials?.length
+  ) {
+    // Case C: nothing in body — asset gave us a product, derive raw_material_chemistry
+    // from the first (primary) component of that product blend
+    rawMaterialSnapshot = await prisma.rawMaterial.findUnique({
+      where: { id: enrichedProductRawMaterials[0].rawId },
+    });
   }
 
-  // Resolve dosage: explicit override > asset program dosage > default
+  // Fix 2: Guard against NaN from non-numeric dosage strings (e.g. "2.5 ppm", "")
+  const parsedProgramDosage = parseFloat(activeProgram?.dosage);
+  const safeProgramDosage = !isNaN(parsedProgramDosage)
+    ? parsedProgramDosage
+    : 2.0;
+
+  // Resolve dosage: explicit override > treatment body dosage > asset program dosage > default
   const resolvedDosage =
-    inputConfig?.dosage_ppm ??
-    treatment?.dosage ??
-    (activeProgram?.dosage ? parseFloat(activeProgram.dosage) : 2.0);
+    inputConfig?.dosage_ppm ?? treatment?.dosage ?? safeProgramDosage;
+
+  // Fix 3: Only include fixed_ph when ph_mode is "fixed" — natural mode uses CO2 equilibrium
+  const resolvedPhMode = inputConfig?.ph_mode ?? "fixed";
 
   // 4. Construct AI Payload — no backend calculations, pass all raw data to AI
   const aiPayload = {
@@ -516,10 +583,19 @@ const createSaturationAnalysis = async (payload: {
     temp_interval: inputConfig?.temp_interval ?? 10,
     temp_unit: inputConfig?.temp_unit ?? tempData?.unit ?? "F",
 
-    // === pH mode: 'fixed' (user-specified value) or 'natural' (from water analysis) ===
-    ph_mode: inputConfig?.ph_mode ?? "fixed",
-    fixed_ph:
-      inputConfig?.fixed_ph ?? phData?.maxValue ?? phData?.minValue ?? 8.2,
+    // === pH mode: 'fixed' (user-specified value) or 'natural' (CO2 equilibrium) ===
+    ph_mode: resolvedPhMode,
+    // fixed_ph only sent when ph_mode is "fixed"
+    ...(resolvedPhMode === "fixed" && {
+      fixed_ph:
+        inputConfig?.fixed_ph ?? phData?.maxValue ?? phData?.minValue ?? 8.2,
+    }),
+    // co2_log_partial_pressure only sent when ph_mode is "natural"
+    // Used by AI to build: EQUILIBRIUM_PHASES CO2(g) <value> 10.0
+    // Default -3.4 = atmospheric CO2 partial pressure (~0.0004 atm)
+    ...(resolvedPhMode === "natural" && {
+      co2_log_partial_pressure: inputConfig?.co2_log_partial_pressure ?? -3.4,
+    }),
 
     // === Charge balance adjustment (anion/cation to balance within +/-5%) ===
     adjustment_chemical: inputConfig?.adjustment_chemical ?? "H2SO4",
@@ -530,13 +606,13 @@ const createSaturationAnalysis = async (payload: {
     base_water_parameters: waterReport.extractedParameters,
 
     // === Product blend snapshot (multi-component treatment) ===
-    // Contains: [{ rawId, percentage, nameSnapshot, costSnapshot }]
+    // Fix 4: rawMaterials enriched with full inhibition chemistry per component
     product_blend: productSnapshot
       ? {
           productId: productSnapshot.id,
           productName: productSnapshot.productName,
           waterPercentage: productSnapshot.waterPercentage,
-          rawMaterials: productSnapshot.rawMaterials,
+          rawMaterials: enrichedProductRawMaterials,
         }
       : null,
 
@@ -576,48 +652,50 @@ const createSaturationAnalysis = async (payload: {
 
   // 5. Run Simulation via AI
   try {
-    const aiResult = await aiClient.post("/saturation/run-analysis", aiPayload);
+    // const aiResult = await aiClient.post("/saturation/run-analysis", aiPayload);
 
-    const aiData = aiResult.data.data;
+    // const aiData = aiResult.data.data;
 
-    // 6. Store Analysis Result in DB with MERGED configuration
-    const analysisRecord = await prisma.saturationAnalysis.create({
-      data: {
-        companyId: asset.customer.companyId,
-        customerId: asset.customerId,
-        assetId: asset.id,
-        waterReportId: waterReport.id,
-        name: name,
-        // Save the full resolved config for historical audit
-        inputConfig: aiPayload as any,
-        productId: targetProductId,
-        rawMaterialId: targetRawMaterialId,
-        aiResponse: aiData,
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            siteName: true,
-            location: true,
-            address: true,
-          },
-        },
-        waterReport: {
-          select: {
-            id: true,
-            aiReportId: true,
-            name: true,
-            originalFilename: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
-      },
-    });
+    // // 6. Store Analysis Result in DB with MERGED configuration
+    // const analysisRecord = await prisma.saturationAnalysis.create({
+    //   data: {
+    //     companyId: asset.customer.companyId,
+    //     customerId: asset.customerId,
+    //     assetId: asset.id,
+    //     waterReportId: waterReport.id,
+    //     name: name,
+    //     // Save the full resolved config for historical audit
+    //     inputConfig: aiPayload as any,
+    //     productId: targetProductId,
+    //     rawMaterialId: targetRawMaterialId,
+    //     aiResponse: aiData,
+    //   },
+    //   include: {
+    //     customer: {
+    //       select: {
+    //         id: true,
+    //         name: true,
+    //         siteName: true,
+    //         location: true,
+    //         address: true,
+    //       },
+    //     },
+    //     waterReport: {
+    //       select: {
+    //         id: true,
+    //         aiReportId: true,
+    //         name: true,
+    //         originalFilename: true,
+    //         createdAt: true,
+    //         updatedAt: true,
+    //       },
+    //     },
+    //   },
+    // });
 
-    return analysisRecord;
+    const analysisRecord = await prisma.saturationAnalysis.findFirst();
+
+    return {...analysisRecord, aiPayload};
   } catch (error) {
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,

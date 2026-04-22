@@ -476,8 +476,8 @@ const createSaturationAnalysis = async (payload: {
     asset?.productPrograms && Array.isArray(asset.productPrograms)
       ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ((asset.productPrograms as any[]).find((p: any) => p.isPrimary) ??
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (asset.productPrograms as any[])[0])
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (asset.productPrograms as any[])[0])
       : null;
 
   // 3. Resolve Treatment Chemistry
@@ -652,50 +652,49 @@ const createSaturationAnalysis = async (payload: {
 
   // 5. Run Simulation via AI
   try {
-    // const aiResult = await aiClient.post("/saturation/run-analysis", aiPayload);
+    const aiResult = await aiClient.post("/saturation/run-analysis", aiPayload);
 
-    // const aiData = aiResult.data.data;
+    const aiData = aiResult.data.data;
 
-    // // 6. Store Analysis Result in DB with MERGED configuration
-    // const analysisRecord = await prisma.saturationAnalysis.create({
-    //   data: {
-    //     companyId: asset.customer.companyId,
-    //     customerId: asset.customerId,
-    //     assetId: asset.id,
-    //     waterReportId: waterReport.id,
-    //     name: name,
-    //     // Save the full resolved config for historical audit
-    //     inputConfig: aiPayload as any,
-    //     productId: targetProductId,
-    //     rawMaterialId: targetRawMaterialId,
-    //     aiResponse: aiData,
-    //   },
-    //   include: {
-    //     customer: {
-    //       select: {
-    //         id: true,
-    //         name: true,
-    //         siteName: true,
-    //         location: true,
-    //         address: true,
-    //       },
-    //     },
-    //     waterReport: {
-    //       select: {
-    //         id: true,
-    //         aiReportId: true,
-    //         name: true,
-    //         originalFilename: true,
-    //         createdAt: true,
-    //         updatedAt: true,
-    //       },
-    //     },
-    //   },
-    // });
+    // 6. Store Analysis Result in DB with MERGED configuration
+    const analysisRecord = await prisma.saturationAnalysis.create({
+      data: {
+        companyId: asset.customer.companyId,
+        customerId: asset.customerId,
+        assetId: asset.id,
+        waterReportId: waterReport.id,
+        name: name,
+        // Save the full resolved config for historical audit
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        inputConfig: aiPayload as any,
+        productId: targetProductId,
+        rawMaterialId: targetRawMaterialId,
+        aiResponse: aiData,
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            siteName: true,
+            location: true,
+            address: true,
+          },
+        },
+        waterReport: {
+          select: {
+            id: true,
+            aiReportId: true,
+            name: true,
+            originalFilename: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
 
-    const analysisRecord = await prisma.saturationAnalysis.findFirst();
-
-    return {...analysisRecord, aiPayload};
+    return analysisRecord;
   } catch (error) {
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,

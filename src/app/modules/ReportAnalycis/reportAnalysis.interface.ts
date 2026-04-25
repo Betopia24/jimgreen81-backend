@@ -5,7 +5,6 @@ export type TModifyReportGraphInput = z.infer<
   typeof ReportAnalysisValidationSchema.modifyReportGraph
 >;
 
-
 export type TRecalculateReportInput = z.infer<
   typeof ReportAnalysisValidationSchema.recalculateReport
 >;
@@ -22,7 +21,6 @@ export type TCreateWaterReportInput = z.infer<
   typeof ReportAnalysisValidationSchema.createWaterReport
 >;
 
-
-
-
-
+export type TSwitchSaltViewInput = z.infer<
+  typeof ReportAnalysisValidationSchema.switchSaltView
+>;

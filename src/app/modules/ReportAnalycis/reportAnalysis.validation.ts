@@ -69,11 +69,13 @@ export const ReportAnalysisValidationSchema = {
         dosage: z.number().optional(),
       })
       .optional()
-      .refine(
-        (t) => !t || !(t.productId && t.rawMaterialId),
-        {
-          message: "Provide either productId or rawMaterialId, not both",
-        },
-      ),
+      .refine((t) => !t || !(t.productId && t.rawMaterialId), {
+        message: "Provide either productId or rawMaterialId, not both",
+      }),
+  }),
+
+  switchSaltView: z.object({
+    run_id: z.string({ required_error: "run_id is required" }).nonempty(),
+    salt_id: z.string({ required_error: "salt_id is required" }).nonempty(),
   }),
 };

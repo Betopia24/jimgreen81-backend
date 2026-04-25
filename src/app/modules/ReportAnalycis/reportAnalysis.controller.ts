@@ -189,6 +189,16 @@ const getAvailableSalts = catchAsync(async (req, res) => {
   });
 });
 
+const switchSaltView = catchAsync(async (req, res) => {
+  const result = await ReportAnalysisService.switchSaltView({ data: req.body });
+
+  sendResponse(res, {
+    statusCode: status.OK,
+    message: "Salt view successfully switched!",
+    data: result,
+  });
+});
+
 export const ReportAnalysisController = {
   extractWaterReport,
   createWaterReport,
@@ -203,4 +213,5 @@ export const ReportAnalysisController = {
   deleteSaturationAnalysis,
   getCompanyOverview,
   getAvailableSalts,
+  switchSaltView,
 };

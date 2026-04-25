@@ -114,4 +114,12 @@ router.get(
   ReportAnalysisController.getAvailableSalts,
 );
 
+// Switch Salt View
+router.post(
+  "/saturation/switch-salt",
+  auth(),
+  validateRequest(ReportAnalysisValidationSchema.switchSaltView),
+  ReportAnalysisController.switchSaltView,
+);
+
 export const reportAnalysisRoutes = router;

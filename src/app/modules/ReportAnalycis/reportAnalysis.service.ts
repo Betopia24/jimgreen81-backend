@@ -8,6 +8,7 @@ import {
   TRecalculateReportInput,
   TSaturationAnalysisInput,
   TCreateWaterReportInput,
+  TSwitchSaltViewInput,
 } from "./reportAnalysis.interface";
 import {
   reportParameterArrayToObject,
@@ -958,6 +959,24 @@ const getAvailableSalts = async () => {
   }
 };
 
+const switchSaltView = async (payload: { data: TSwitchSaltViewInput }) => {
+  try {
+    const aiResult = await aiClient.post(
+      "/saturation/switch-salt",
+      payload.data,
+    );
+    return aiResult.data.data;
+  } catch (error) {
+    throw new AppError(
+      status.INTERNAL_SERVER_ERROR,
+      "Failed to perform saturation analysis!\n" +
+        " " +
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (error as any).response?.data.detail || (error as any).message,
+    );
+  }
+};
+
 export const ReportAnalysisService = {
   extractWaterReport,
   createWaterReport,
@@ -972,4 +991,5 @@ export const ReportAnalysisService = {
   deleteSaturationAnalysis,
   getCompanyOverview,
   getAvailableSalts,
+  switchSaltView,
 };

@@ -695,7 +695,7 @@ const createSaturationAnalysis = async (payload: {
       },
     });
 
-    return analysisRecord;
+    return { ...analysisRecord, aiPayload: aiPayload };
   } catch (error) {
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,

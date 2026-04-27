@@ -304,9 +304,6 @@ model SaturationAnalysis {
 
   name            String
 
-  // INPUT CONFIG
-  inputConfig     Json     // coc, temp, pH, salt, etc.
-
   // Selected treatment
   productId       String?  @db.ObjectId
   rawMaterialId   String?  @db.ObjectId

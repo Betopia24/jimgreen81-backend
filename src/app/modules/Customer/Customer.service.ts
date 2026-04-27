@@ -25,7 +25,12 @@ const getCustomersByCompanyId = async (companyId: string) => {
       createdAt: "desc",
     },
     include: {
-      _count: true,
+      _count: {
+        select: {
+          assets: true,
+          waterReports: true,
+        },
+      },
     },
   });
 

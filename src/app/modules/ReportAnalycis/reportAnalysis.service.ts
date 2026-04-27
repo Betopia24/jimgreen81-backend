@@ -666,8 +666,6 @@ const createSaturationAnalysis = async (payload: {
         waterReportId: waterReport.id,
         name: name,
         // Save the full resolved config for historical audit
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        inputConfig: aiPayload as any,
         productId: targetProductId,
         rawMaterialId: targetRawMaterialId,
         aiResponse: aiData,

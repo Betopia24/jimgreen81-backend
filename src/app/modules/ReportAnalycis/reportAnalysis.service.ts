@@ -913,7 +913,6 @@ const getCompanyOverview = async (payload: { companyId: string }) => {
           _count: {
             select: {
               waterReports: true,
-              saturationAnalyses: true,
             },
           },
           waterReports: {
@@ -926,11 +925,6 @@ const getCompanyOverview = async (payload: { companyId: string }) => {
               originalFilename: true,
               assetId: true,
               customerId: true,
-              _count: {
-                select: {
-                  saturationAnalyses: true,
-                },
-              },
             },
             orderBy: { createdAt: "desc" },
           },

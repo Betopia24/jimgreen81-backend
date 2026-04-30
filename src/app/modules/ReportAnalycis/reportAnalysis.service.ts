@@ -641,6 +641,7 @@ const createSaturationAnalysis = async (payload: {
       type: asset.type,
       towerType: asset.towerType,
       systemVolume: asset.systemVolume,
+      systemVolumeType: asset.systemVolumeType,
       systemMetallurgy: asset.systemMetallurgy,
       systemMaterials: asset.systemMaterials,
       supplyTemperature: asset.supplyTemperature,
@@ -648,6 +649,7 @@ const createSaturationAnalysis = async (payload: {
       returnTemperature: asset.returnTemperature,
       returnTemperatureType: asset.returnTemperatureType,
       recirculationRate: asset.recirculationRate,
+      recirculationRateType: asset.recirculationRateType,
     },
   };
 

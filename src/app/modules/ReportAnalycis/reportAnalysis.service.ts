@@ -640,6 +640,10 @@ const createSaturationAnalysis = async (payload: {
       name: asset.name,
       type: asset.type,
       towerType: asset.towerType,
+      fillType: asset.fillType,
+      criticalHeatExchangerDesign: asset.criticalHeatExchangerDesign,
+      tonnageOfCooling: asset.tonnageOfCooling,
+      deltaTemperature: asset.deltaTemperature,
       systemVolume: asset.systemVolume,
       systemVolumeType: asset.systemVolumeType,
       systemMetallurgy: asset.systemMetallurgy,
@@ -650,63 +654,78 @@ const createSaturationAnalysis = async (payload: {
       returnTemperatureType: asset.returnTemperatureType,
       recirculationRate: asset.recirculationRate,
       recirculationRateType: asset.recirculationRateType,
+
+      hottestSkinTemperature: asset.hottestSkinTemperature,
+      hottestSkinTemperatureType: asset.hottestSkinTemperatureType,
+      criticalHeatExchangerFlowRate: asset.criticalHeatExchangerFlowRate,
+      criticalHeatExchangerFlowRateType:
+        asset.criticalHeatExchangerFlowRateType,
+      flowRate: asset.flowRate,
+      flowRateType: asset.flowRateType,
+      dischargeTemperature: asset.dischargeTemperature,
+      dischargeTemperatureType: asset.dischargeTemperatureType,
+      criticalCooling: asset.criticalCooling,
+      criticalFlowRate: asset.criticalFlowRate,
+      criticalFlowRateType: asset.criticalFlowRateType,
+      NSFStandard60: asset.NSFStandard60,
+      NSFG5G7: asset.NSFG5G7,
+      GRAS: asset.GRAS,
+      environmentalDischargeLimits: asset.environmentalDischargeLimits,
     },
   };
 
-  return aiPayload;
+  // 5. Run Simulation via AI
+  try {
+    const aiResult = await aiClient.post("/saturation/run-analysis", aiPayload);
 
-  // // 5. Run Simulation via AI
-  // try {
-  //   const aiResult = await aiClient.post("/saturation/run-analysis", aiPayload);
+    const aiData = aiResult.data.data;
 
-  //   const aiData = aiResult.data.data;
+    // 6. Store Analysis Result in DB with MERGED configuration
+    const analysisRecord = await prisma.saturationAnalysis.create({
+      data: {
+        companyId: asset.customer.companyId,
+        customerId: asset.customerId,
+        assetId: asset.id,
+        waterReportId: waterReport.id,
+        name: name,
+        // Save the full resolved config for historical audit
+        productId: targetProductId,
+        rawMaterialId: targetRawMaterialId,
+        aiResponse: aiData,
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            siteName: true,
+            location: true,
+            address: true,
+          },
+        },
+        waterReport: {
+          select: {
+            id: true,
+            aiReportId: true,
+            name: true,
+            originalFilename: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
 
-  //   // 6. Store Analysis Result in DB with MERGED configuration
-  //   const analysisRecord = await prisma.saturationAnalysis.create({
-  //     data: {
-  //       companyId: asset.customer.companyId,
-  //       customerId: asset.customerId,
-  //       assetId: asset.id,
-  //       waterReportId: waterReport.id,
-  //       name: name,
-  //       // Save the full resolved config for historical audit
-  //       productId: targetProductId,
-  //       rawMaterialId: targetRawMaterialId,
-  //       aiResponse: aiData,
-  //     },
-  //     include: {
-  //       customer: {
-  //         select: {
-  //           id: true,
-  //           name: true,
-  //           siteName: true,
-  //           location: true,
-  //           address: true,
-  //         },
-  //       },
-  //       waterReport: {
-  //         select: {
-  //           id: true,
-  //           aiReportId: true,
-  //           name: true,
-  //           originalFilename: true,
-  //           createdAt: true,
-  //           updatedAt: true,
-  //         },
-  //       },
-  //     },
-  //   });
-
-  //   return { ...analysisRecord, aiPayload: aiPayload };
-  // } catch (error) {
-  //   throw new AppError(
-  //     status.INTERNAL_SERVER_ERROR,
-  //     "Failed to perform saturation analysis!\n" +
-  //       " " +
-  //       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  //       (error as any).response?.data.detail || (error as any).message,
-  //   );
-  // }
+    return { ...analysisRecord, aiPayload: aiPayload };
+  } catch (error) {
+    throw new AppError(
+      status.INTERNAL_SERVER_ERROR,
+      "Failed to perform saturation analysis!\n" +
+        " " +
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (error as any).response?.data.detail || (error as any).message,
+    );
+  }
 };
 
 // Flexible filter: by companyId, customerId, assetId, or waterReportId (query params)

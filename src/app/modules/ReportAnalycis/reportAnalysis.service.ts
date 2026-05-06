@@ -653,58 +653,60 @@ const createSaturationAnalysis = async (payload: {
     },
   };
 
-  // 5. Run Simulation via AI
-  try {
-    const aiResult = await aiClient.post("/saturation/run-analysis", aiPayload);
+  return aiPayload;
 
-    const aiData = aiResult.data.data;
+  // // 5. Run Simulation via AI
+  // try {
+  //   const aiResult = await aiClient.post("/saturation/run-analysis", aiPayload);
 
-    // 6. Store Analysis Result in DB with MERGED configuration
-    const analysisRecord = await prisma.saturationAnalysis.create({
-      data: {
-        companyId: asset.customer.companyId,
-        customerId: asset.customerId,
-        assetId: asset.id,
-        waterReportId: waterReport.id,
-        name: name,
-        // Save the full resolved config for historical audit
-        productId: targetProductId,
-        rawMaterialId: targetRawMaterialId,
-        aiResponse: aiData,
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            siteName: true,
-            location: true,
-            address: true,
-          },
-        },
-        waterReport: {
-          select: {
-            id: true,
-            aiReportId: true,
-            name: true,
-            originalFilename: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
-      },
-    });
+  //   const aiData = aiResult.data.data;
 
-    return { ...analysisRecord, aiPayload: aiPayload };
-  } catch (error) {
-    throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
-      "Failed to perform saturation analysis!\n" +
-        " " +
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (error as any).response?.data.detail || (error as any).message,
-    );
-  }
+  //   // 6. Store Analysis Result in DB with MERGED configuration
+  //   const analysisRecord = await prisma.saturationAnalysis.create({
+  //     data: {
+  //       companyId: asset.customer.companyId,
+  //       customerId: asset.customerId,
+  //       assetId: asset.id,
+  //       waterReportId: waterReport.id,
+  //       name: name,
+  //       // Save the full resolved config for historical audit
+  //       productId: targetProductId,
+  //       rawMaterialId: targetRawMaterialId,
+  //       aiResponse: aiData,
+  //     },
+  //     include: {
+  //       customer: {
+  //         select: {
+  //           id: true,
+  //           name: true,
+  //           siteName: true,
+  //           location: true,
+  //           address: true,
+  //         },
+  //       },
+  //       waterReport: {
+  //         select: {
+  //           id: true,
+  //           aiReportId: true,
+  //           name: true,
+  //           originalFilename: true,
+  //           createdAt: true,
+  //           updatedAt: true,
+  //         },
+  //       },
+  //     },
+  //   });
+
+  //   return { ...analysisRecord, aiPayload: aiPayload };
+  // } catch (error) {
+  //   throw new AppError(
+  //     status.INTERNAL_SERVER_ERROR,
+  //     "Failed to perform saturation analysis!\n" +
+  //       " " +
+  //       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //       (error as any).response?.data.detail || (error as any).message,
+  //   );
+  // }
 };
 
 // Flexible filter: by companyId, customerId, assetId, or waterReportId (query params)

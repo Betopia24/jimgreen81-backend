@@ -315,10 +315,10 @@ model SaturationAnalysis {
   updatedAt       DateTime @updatedAt
 
   // relations
-  waterReport     WaterReport @relation(fields: [waterReportId], references: [id])
-  company         Company     @relation(fields: [companyId], references: [id])
-  customer        Customer    @relation(fields: [customerId], references: [id])
-  asset           Asset       @relation(fields: [assetId], references: [id])
+  waterReport     WaterReport @relation(fields: [waterReportId], references: [id], onDelete: Cascade)
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  asset           Asset       @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
   @@map("saturation_analyses")
 }

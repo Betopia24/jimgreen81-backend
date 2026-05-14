@@ -14,8 +14,8 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST_IP }}
-          username: ${{ secrets.USER }} # ubuntu
-          password: ${{ secrets.SSH_PRIVATE_KEY }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             set -e
@@ -32,4 +32,3 @@ jobs:
 
             # Clean up old floating docker images to save server disk space
             docker image prune -f
-

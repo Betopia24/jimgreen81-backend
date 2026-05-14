@@ -1,0 +1,75 @@
+services:
+  app:
+    build: .
+    restart: always
+    ports:
+      - "${PORT:-5011}:${PORT:-5011}"
+    env_file: .env
+    depends_on:
+      - db
+
+  mongo-setup:
+    image: mongo:6.0
+    restart: "no"
+    command: >
+      bash -c "
+        if [ ! -f /etc/mongo-keys/mongo-keyfile ]; then
+          openssl rand -base64 756 > /etc/mongo-keys/mongo-keyfile
+          chmod 400 /etc/mongo-keys/mongo-keyfile
+          chown 999:999 /etc/mongo-keys/mongo-keyfile
+        fi
+      "
+    volumes:
+      - mongo-keys:/etc/mongo-keys
+
+  db:
+    image: mongo:6.0
+    depends_on:
+      mongo-setup:
+        condition: service_completed_successfully
+    command:
+      [
+        "mongod",
+        "--replSet",
+        "rs0",
+        "--bind_ip_all",
+        "--keyFile",
+        "/etc/mongo-keys/mongo-keyfile",
+      ]
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: strongpassword
+    volumes:
+      - mongo-data:/data/db
+      - mongo-keys:/etc/mongo-keys
+
+  init-db:
+    image: mongo:6.0
+    restart: "no"
+    depends_on:
+      - db
+    entrypoint: >
+      bash -c "
+        echo 'Waiting for MongoDB...' &&
+        until mongosh --host db:27017 -u admin -p strongpassword --authenticationDatabase admin --eval 'db.runCommand({ ping: 1 })' >/dev/null 2>&1; do
+          sleep 2;
+        done &&
+        mongosh --host db:27017 -u admin -p strongpassword --authenticationDatabase admin --eval '
+          try {
+            rs.initiate({
+              _id: \"rs0\",
+              members: [{ _id: 0, host: \"db:27017\" }]
+            })
+          } catch(e) {
+            print(e)
+          }
+        ' &&
+        echo 'Replica set READY'
+      "
+
+volumes:
+  mongo-data:
+  mongo-keys:

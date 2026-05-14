@@ -28,7 +28,7 @@ jobs:
             git pull origin main
 
             # Rebuild the Docker environment without downtime
-            docker-compose up --build -d
+            docker compose up --build -d
 
             # Clean up old floating docker images to save server disk space
             docker image prune -f

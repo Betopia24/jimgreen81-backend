@@ -672,6 +672,12 @@ const createSaturationAnalysis = async (payload: {
       GRAS: asset.GRAS,
       environmentalDischargeLimits: asset.environmentalDischargeLimits,
     },
+    customer_info: {
+      name: asset.customer.name,
+      siteName: asset.customer.siteName,
+      location: asset.customer.location,
+      address: asset.customer.address,
+    },
   };
 
   // 5. Run Simulation via AI

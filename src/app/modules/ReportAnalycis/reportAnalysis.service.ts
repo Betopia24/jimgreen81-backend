@@ -18,6 +18,7 @@ import {
   IPaginationOptions,
   PaginationHelper,
 } from "../../../helpers/pagination";
+import logger from "../../../utils/logger";
 
 const extractWaterReport = async (payload: { file: Express.Multer.File }) => {
   if (!payload.file) {
@@ -679,6 +680,8 @@ const createSaturationAnalysis = async (payload: {
       address: asset.customer.address,
     },
   };
+
+  logger.info("AI Payload Before AI call: ", aiPayload);
 
   // 5. Run Simulation via AI
   try {

@@ -614,6 +614,10 @@ const createSaturationAnalysis = async (payload: {
           productId: productSnapshot.id,
           productName: productSnapshot.productName,
           waterPercentage: productSnapshot.waterPercentage,
+          manualCostOverride: productSnapshot.manualCostOverride,
+          finalProductCost: productSnapshot.finalProductCost,
+          productPrice: productSnapshot.productPrice,
+          communityVisibility: productSnapshot.communityVisibility,
           rawMaterials: enrichedProductRawMaterials,
         }
       : null,
@@ -681,7 +685,7 @@ const createSaturationAnalysis = async (payload: {
     },
   };
 
-  console.log("AI Payload Before AI call: ", aiPayload);
+  console.log("AI Payload Before AI call: ", JSON.stringify(aiPayload));
 
   // 5. Run Simulation via AI
   try {

@@ -681,7 +681,7 @@ const createSaturationAnalysis = async (payload: {
     },
   };
 
-  logger.info("AI Payload Before AI call: ", aiPayload);
+  console.log("AI Payload Before AI call: ", aiPayload);
 
   // 5. Run Simulation via AI
   try {
